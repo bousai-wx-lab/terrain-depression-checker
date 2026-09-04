@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import importlib.util
+from copy import deepcopy
 from pathlib import Path
 
 
@@ -35,7 +36,26 @@ def main() -> int:
         {allowed_email},
         allowed_hosts,
     )
-    print("PRIVACY_GATE_TESTS_OK cases=6")
+    asset_path = MODULE.ROOT / "assets/bousaiwxlab-site-icon.png"
+    asset_data = asset_path.read_bytes()
+    record = {
+        "path": "assets/bousaiwxlab-site-icon.png",
+        "bytes": 266670,
+        "sha256": "f2258fc48adea8bdcf175699fb08b434b039c0aee83a4439c181741f3c2a4c9e",
+        "mime_type": "image/png",
+        "width": 512,
+        "height": 512,
+        "bit_depth": 8,
+        "color_type": 2,
+    }
+    assert not MODULE.validate_binary_asset(record["path"], asset_data, record)
+    tampered = bytearray(asset_data)
+    tampered[-16] ^= 1
+    assert MODULE.validate_binary_asset(record["path"], bytes(tampered), record)
+    wrong_size = deepcopy(record)
+    wrong_size["width"] = 511
+    assert MODULE.validate_binary_asset(record["path"], asset_data, wrong_size)
+    print("PRIVACY_GATE_TESTS_OK cases=9")
     return 0
 
 

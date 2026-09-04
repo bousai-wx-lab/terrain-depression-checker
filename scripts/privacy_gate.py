@@ -9,8 +9,10 @@ import mimetypes
 import os
 import re
 import stat
+import struct
 import subprocess
 import sys
+import zlib
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -142,12 +144,85 @@ def read_text_or_none(data: bytes) -> str | None:
         return None
 
 
+def inspect_png(data: bytes) -> tuple[dict[str, int], list[str]]:
+    findings: list[str] = []
+    if not data.startswith(b"\x89PNG\r\n\x1a\n"):
+        return {}, ["invalid PNG signature"]
+    position = 8
+    header: dict[str, int] = {}
+    saw_end = False
+    while position + 12 <= len(data):
+        length = struct.unpack(">I", data[position:position + 4])[0]
+        chunk_type = data[position + 4:position + 8]
+        chunk_end = position + 12 + length
+        if chunk_end > len(data):
+            findings.append("truncated PNG chunk")
+            break
+        payload = data[position + 8:position + 8 + length]
+        expected_crc = struct.unpack(">I", data[position + 8 + length:chunk_end])[0]
+        actual_crc = zlib.crc32(chunk_type + payload) & 0xFFFFFFFF
+        if actual_crc != expected_crc:
+            findings.append("PNG chunk CRC mismatch")
+        if chunk_type == b"IHDR":
+            if length != 13 or header:
+                findings.append("invalid PNG IHDR")
+            else:
+                width, height, bit_depth, color_type, compression, filtering, interlace = struct.unpack(">IIBBBBB", payload)
+                header = {
+                    "width": width,
+                    "height": height,
+                    "bit_depth": bit_depth,
+                    "color_type": color_type,
+                    "compression": compression,
+                    "filtering": filtering,
+                    "interlace": interlace,
+                }
+        if chunk_type == b"IEND":
+            saw_end = True
+            position = chunk_end
+            break
+        position = chunk_end
+    if not header:
+        findings.append("PNG IHDR is missing")
+    if not saw_end:
+        findings.append("PNG IEND is missing")
+    if position != len(data):
+        findings.append("PNG has trailing bytes")
+    return header, findings
+
+
+def validate_binary_asset(path_label: str, data: bytes, record: dict) -> list[str]:
+    findings: list[str] = []
+    if len(data) != record.get("bytes"):
+        findings.append(f"binary asset byte count mismatch: {path_label}")
+    if digest_bytes(data) != record.get("sha256"):
+        findings.append(f"binary asset hash mismatch: {path_label}")
+    if record.get("mime_type") != "image/png":
+        findings.append(f"unsupported binary asset MIME: {path_label}")
+        return findings
+    header, png_findings = inspect_png(data)
+    findings.extend(f"{finding}: {path_label}" for finding in png_findings)
+    for field in ("width", "height", "bit_depth", "color_type"):
+        if header.get(field) != record.get(field):
+            findings.append(f"binary asset {field} mismatch: {path_label}")
+    if header and (header.get("compression") != 0 or header.get("filtering") != 0 or header.get("interlace") not in {0, 1}):
+        findings.append(f"unsupported PNG encoding: {path_label}")
+    return findings
+
+
 def validate_worktree(allowlist: dict) -> list[str]:
     findings: list[str] = []
     allowed_files = set(allowlist["allowed_files"])
     allowed_emails = {item["email"] for item in allowlist["allowed_git_identities"]}
     allowed_hosts = {host.lower() for host in allowlist["allowed_external_hosts"]}
+    binary_assets = {item["path"]: item for item in allowlist.get("allowed_binary_assets", [])}
     actual_files: set[str] = set()
+
+    if len(binary_assets) != len(allowlist.get("allowed_binary_assets", [])):
+        findings.append("duplicate binary asset path")
+    for binary_path in binary_assets:
+        if binary_path not in allowed_files:
+            findings.append(f"binary asset is not in allowed_files: {binary_path}")
 
     for path in ROOT.rglob("*"):
         relative = path.relative_to(ROOT)
@@ -174,8 +249,14 @@ def validate_worktree(allowlist: dict) -> list[str]:
         data = path.read_bytes()
         text = read_text_or_none(data)
         if text is None:
-            findings.append(f"unexpected binary or non-UTF-8 file: {relative_text}")
+            record = binary_assets.get(relative_text)
+            if record is None:
+                findings.append(f"unexpected binary or non-UTF-8 file: {relative_text}")
+            else:
+                findings.extend(validate_binary_asset(relative_text, data, record))
         else:
+            if relative_text in binary_assets:
+                findings.append(f"configured binary asset is text: {relative_text}")
             findings.extend(scan_text(relative_text, text, allowed_emails, allowed_hosts))
 
     for missing in sorted(allowed_files - actual_files):
@@ -247,6 +328,9 @@ def validate_git(allowlist: dict) -> list[str]:
     }
     allowed_emails = {email for _, email in allowed_identities}
     allowed_hosts = {host.lower() for host in allowlist["allowed_external_hosts"]}
+    allowed_binary_hashes = {
+        item["sha256"] for item in allowlist.get("allowed_binary_assets", [])
+    }
 
     remote_output = run_git(["remote", "-v"]).stdout.decode("utf-8", "replace")
     allowed_remote_urls = set(allowlist.get("allowed_remote_urls", []))
@@ -294,7 +378,8 @@ def validate_git(allowlist: dict) -> list[str]:
         data = run_git(["cat-file", "-p", object_id]).stdout
         text = read_text_or_none(data)
         if text is None:
-            findings.append(f"binary or non-UTF-8 Git object: {object_id[:12]}")
+            if object_type != "blob" or digest_bytes(data) not in allowed_binary_hashes:
+                findings.append(f"binary or non-UTF-8 Git object: {object_id[:12]}")
         else:
             findings.extend(scan_text(f"git-object@{object_id[:12]}", text, allowed_emails, allowed_hosts))
 
