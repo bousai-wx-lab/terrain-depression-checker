@@ -12,9 +12,27 @@
       name="description"
       content="国土地理院の標高タイルから、周囲より低い地形をブラウザ内で見つけやすくする参考ツールです。"
     />
+    <link rel="canonical" href="https://bousai-wx-lab.github.io/terrain-depression-checker/" />
+    <meta property="og:locale" content="ja_JP" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Bousai Wx Lab" />
+    <meta property="og:title" content="周囲より低い地形チェッカー | Bousai Wx Lab" />
+    <meta property="og:description" content="国土地理院の標高タイルから、周囲より低い地形をブラウザ内で見つけやすくする参考ツールです。" />
+    <meta property="og:url" content="https://bousai-wx-lab.github.io/terrain-depression-checker/" />
+    <meta property="og:image" content="https://bousai-wx-lab.github.io/terrain-depression-checker/assets/terrain-depression-share-card.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1731" />
+    <meta property="og:image:height" content="909" />
+    <meta property="og:image:alt" content="周囲より低い地形チェッカーの機能と地図表示を紹介するBousai Wx Labのカード画像" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@bousai_wx_lab" />
+    <meta name="twitter:title" content="周囲より低い地形チェッカー | Bousai Wx Lab" />
+    <meta name="twitter:description" content="国土地理院の標高タイルから、周囲より低い地形をブラウザ内で見つけやすくする参考ツールです。" />
+    <meta name="twitter:image" content="https://bousai-wx-lab.github.io/terrain-depression-checker/assets/terrain-depression-share-card.png" />
+    <meta name="twitter:image:alt" content="周囲より低い地形チェッカーの機能と地図表示を紹介するBousai Wx Labのカード画像" />
     <link rel="icon" type="image/png" href="./assets/bousaiwxlab-site-icon.png" />
     <title>周囲より低い地形チェッカー | Bousai Wx Lab</title>
-    <link rel="stylesheet" href="./styles.css?v=20260904-6" />
+    <link rel="stylesheet" href="./styles.css?v=20260904-7" />
   </head>
   <body>
     <header class="topbar">
@@ -141,7 +159,8 @@
 
         <details class="privacy-note">
           <summary>プライバシーと通信</summary>
-          <p>位置情報、住所、Cookie、ブラウザ保存領域、アクセス解析は使いません。表示範囲の地図・標高タイルだけを国土地理院から取得します。ブログとXには、上部リンクを押した時だけ移動します。</p>
+          <p>位置情報API、住所、Cookie、ブラウザ保存領域、アクセス解析は使いません。表示範囲の地図・標高タイルだけを国土地理院から取得します。ブログとXには、上部リンクを押した時だけ移動します。</p>
+          <p>「リンク取得」は表示中心の緯度・経度、ズーム、判定・地図表示の設定、選択地点がある場合はその座標をURLへ含めます。サーバーや端末内へ保存はしませんが、リンクを受け取った人には表示位置が伝わるため、個人宅などを共有する前に確認してください。</p>
         </details>
       </aside>
 
@@ -166,6 +185,21 @@
             <span><i class="legend-color c4"></i>10 m以上</span>
             <small>危険度ではありません</small>
           </div>
+          <div class="map-share-actions" role="group" aria-label="表示中の地図を共有または保存">
+            <button id="copyLinkButton" type="button" title="現在の表示を開ける共有リンクをコピー">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M9.5 14.5 14.5 9.5M7.2 16.8l-1.1 1.1a3.5 3.5 0 0 1-5-5l4-4a3.5 3.5 0 0 1 5 0M16.8 7.2l1.1-1.1a3.5 3.5 0 1 1 5 5l-4 4a3.5 3.5 0 0 1-5 0"></path>
+              </svg>
+              <span id="copyLinkLabel">リンク取得</span>
+            </button>
+            <button id="downloadButton" type="button" title="現在の地図を凡例・縮尺・出典付きPNGで保存">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M12 2v13m-5-5 5 5 5-5M4 17v4h16v-4"></path>
+              </svg>
+              <span id="downloadLabel">PNG保存</span>
+            </button>
+          </div>
+          <p id="shareActionStatus" class="visually-hidden" role="status" aria-live="polite"></p>
           <div id="loadingPanel" class="loading-panel" role="status" aria-live="polite" hidden></div>
           <div id="tooltip" class="tooltip" hidden></div>
           <div id="mapScale" class="map-scale" aria-label="縮尺">
@@ -189,6 +223,6 @@
     </footer>
 
     <noscript>このツールの利用にはJavaScriptが必要です。</noscript>
-    <script type="module" src="./app.js?v=20260904-6"></script>
+    <script type="module" src="./app.js?v=20260904-7"></script>
   </body>
 </html>

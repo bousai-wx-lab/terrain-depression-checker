@@ -244,12 +244,13 @@ def validate_worktree(allowlist: dict) -> list[str]:
         mode = path.stat().st_mode
         if mode & (stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH):
             findings.append(f"unexpected executable bit: {relative_text}")
-        if path.stat().st_size > int(allowlist["max_file_bytes"]):
+        binary_record = binary_assets.get(relative_text)
+        if path.stat().st_size > int(allowlist["max_file_bytes"]) and binary_record is None:
             findings.append(f"file exceeds size limit: {relative_text}")
         data = path.read_bytes()
         text = read_text_or_none(data)
         if text is None:
-            record = binary_assets.get(relative_text)
+            record = binary_record
             if record is None:
                 findings.append(f"unexpected binary or non-UTF-8 file: {relative_text}")
             else:
@@ -368,7 +369,12 @@ def validate_git(allowlist: dict) -> list[str]:
             findings.append(f"Git object size is invalid: {object_id[:12]}")
             continue
         if object_size > int(allowlist["max_file_bytes"]):
-            findings.append(f"Git object exceeds size limit: {object_id[:12]}")
+            if object_type != "blob":
+                findings.append(f"Git object exceeds size limit: {object_id[:12]}")
+                continue
+            oversized_data = run_git(["cat-file", "-p", object_id]).stdout
+            if digest_bytes(oversized_data) not in allowed_binary_hashes:
+                findings.append(f"Git object exceeds size limit: {object_id[:12]}")
             continue
         if object_type not in {"blob", "commit", "tag", "tree"}:
             findings.append(f"unexpected Git object type: {object_type}")

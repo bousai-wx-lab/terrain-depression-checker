@@ -9,7 +9,9 @@ import {
   lonLatToWorldPixel,
   metersPerPixel,
   minimumRingSamples,
+  parseShareState,
   scaleBarSpec,
+  serializeShareState,
   tileCoordinate,
   tileSourceZoom,
   worldPixelToLonLat,
@@ -67,4 +69,37 @@ assert.equal(minimumRingSamples(10000), 6);
 assert.equal(minimumRingSamples(50000), 4);
 assert.equal(minimumRingSamples(300000), 4);
 
-process.stdout.write("TERRAIN_ALGORITHM_TESTS_OK cases=42\n");
+const shareQuery = serializeShareState({
+  latitude: 35.681234,
+  longitude: 139.767456,
+  zoom: 18,
+  radius: 300000,
+  threshold: 0.5,
+  baseMap: "pale",
+  baseMapOpacity: 45,
+  terrain: false,
+  terrainStyle: "color",
+  terrainOpacity: 70,
+  depressionOpacity: 90,
+  selectedPoint: { latitude: 35.68, longitude: 139.77 },
+});
+const parsedShare = parseShareState(shareQuery);
+assert.equal(parsedShare.latitude, 35.681234);
+assert.equal(parsedShare.longitude, 139.767456);
+assert.equal(parsedShare.zoom, 18);
+assert.equal(parsedShare.radius, 300000);
+assert.equal(parsedShare.threshold, 0.5);
+assert.equal(parsedShare.baseMap, "pale");
+assert.equal(parsedShare.baseMapOpacity, 45);
+assert.equal(parsedShare.terrain, false);
+assert.equal(parsedShare.terrainStyle, "color");
+assert.equal(parsedShare.terrainOpacity, 70);
+assert.equal(parsedShare.depressionOpacity, 90);
+assert.deepEqual(parsedShare.selectedPoint, { latitude: 35.68, longitude: 139.77 });
+
+const invalidShare = parseShareState("?v=1&lat=90&lon=200&z=99&radius=7&threshold=99&base=evil&baseOpacity=41&terrain=yes&terrainStyle=other&terrainOpacity=-5&depressionOpacity=100");
+assert.deepEqual(invalidShare, {});
+assert.deepEqual(parseShareState("?v=1"), {});
+assert.deepEqual(parseShareState("?lat=35&lon=139&z=14"), {});
+
+process.stdout.write("TERRAIN_ALGORITHM_TESTS_OK cases=42\nSHARE_STATE_TESTS_OK cases=15\n");

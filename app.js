@@ -9,7 +9,9 @@ import {
   lonLatToWorldPixel,
   metersPerPixel,
   minimumRingSamples,
+  parseShareState,
   scaleBarSpec,
+  serializeShareState,
   tileCoordinate,
   tileSourceZoom,
   worldPixelToLonLat,
@@ -54,6 +56,11 @@ const elements = {
   scale: document.querySelector("#mapScale"),
   scaleLabel: document.querySelector("#mapScaleLabel"),
   scaleLine: document.querySelector("#mapScaleLine"),
+  copyLink: document.querySelector("#copyLinkButton"),
+  copyLinkLabel: document.querySelector("#copyLinkLabel"),
+  download: document.querySelector("#downloadButton"),
+  downloadLabel: document.querySelector("#downloadLabel"),
+  shareStatus: document.querySelector("#shareActionStatus"),
 };
 
 const context = elements.canvas.getContext("2d", { alpha: false });
@@ -72,6 +79,7 @@ const state = {
   gesture: null,
   moved: false,
   downPoint: null,
+  selectedPoint: null,
 };
 
 function canvasCssSize() {
@@ -88,7 +96,7 @@ function resizeCanvas() {
   elements.canvas.width = nextWidth;
   elements.canvas.height = nextHeight;
   state.deviceScale = deviceScale;
-  invalidateAnalysis("画面サイズが変わりました");
+  invalidateAnalysis("画面サイズが変わりました", { preserveSelection: true });
 }
 
 function currentCenterWorld(zoom = state.zoom) {
@@ -123,6 +131,52 @@ function updateScaleBar() {
   elements.scaleLabel.textContent = spec.label;
   elements.scaleLine.style.width = `${Math.round(spec.pixels)}px`;
   elements.scale.setAttribute("aria-label", `縮尺 ${spec.label}`);
+}
+
+function applySharedViewState() {
+  const shared = parseShareState(window.location.search);
+  if (Number.isFinite(shared.longitude) && Number.isFinite(shared.latitude)) {
+    state.longitude = shared.longitude;
+    state.latitude = shared.latitude;
+  }
+  if (Number.isInteger(shared.zoom)) state.zoom = shared.zoom;
+  if (Number.isFinite(shared.radius)) elements.radius.value = String(shared.radius);
+  if (Number.isFinite(shared.threshold)) elements.threshold.value = String(shared.threshold);
+  if (shared.baseMap) elements.baseMap.value = shared.baseMap;
+  if (Number.isFinite(shared.baseMapOpacity)) elements.baseMapOpacity.value = String(shared.baseMapOpacity);
+  if (typeof shared.terrain === "boolean") elements.terrainToggle.checked = shared.terrain;
+  if (shared.terrainStyle) elements.terrainStyle.value = shared.terrainStyle;
+  if (Number.isFinite(shared.terrainOpacity)) elements.terrainOpacity.value = String(shared.terrainOpacity);
+  if (Number.isFinite(shared.depressionOpacity)) elements.opacity.value = String(shared.depressionOpacity);
+  if (shared.selectedPoint) state.selectedPoint = shared.selectedPoint;
+  clampView();
+  return Object.keys(shared).length > 0;
+}
+
+function syncTerrainControls() {
+  const disabled = !elements.terrainToggle.checked;
+  elements.terrainStyle.disabled = disabled;
+  elements.terrainOpacity.disabled = disabled;
+}
+
+function currentShareUrl() {
+  const url = new URL(window.location.href);
+  url.search = serializeShareState({
+    latitude: state.latitude,
+    longitude: state.longitude,
+    zoom: state.zoom,
+    radius: elements.radius.value,
+    threshold: elements.threshold.value,
+    baseMap: elements.baseMap.value,
+    baseMapOpacity: elements.baseMapOpacity.value,
+    terrain: elements.terrainToggle.checked,
+    terrainStyle: elements.terrainStyle.value,
+    terrainOpacity: elements.terrainOpacity.value,
+    depressionOpacity: elements.opacity.value,
+    selectedPoint: state.selectedPoint,
+  });
+  url.hash = "";
+  return url.toString();
 }
 
 function setZoom(nextZoom, anchorX, anchorY) {
@@ -308,10 +362,10 @@ function scheduleAnalysis() {
   }, 420);
 }
 
-function invalidateAnalysis(message) {
+function invalidateAnalysis(message, { preserveSelection = false } = {}) {
   state.analysisSequence += 1;
   state.analysis = null;
-  clearPointReadout();
+  clearPointReadout({ clearSelection: !preserveSelection });
   updateStamp(message);
   hideLoading();
   scheduleDraw();
@@ -612,6 +666,7 @@ async function analyzeVisibleArea() {
     ? `・半径が${resolution}未満のため着色は限定的`
     : "";
   updateStamp(`${result.coloredCount.toLocaleString("ja-JP")}格子を着色・標高 ${sourceLabel}・解析${resolution}・有効${result.requiredSampleCount}方向以上${resolutionNote}`);
+  restoreSelectedPoint();
   scheduleDraw();
 }
 
@@ -629,7 +684,8 @@ function analysisAtCss(x, y) {
   };
 }
 
-function clearPointReadout() {
+function clearPointReadout({ clearSelection = false } = {}) {
+  if (clearSelection) state.selectedPoint = null;
   elements.elevation.textContent = "--";
   elements.surrounding.textContent = "--";
   elements.depth.textContent = "--";
@@ -637,13 +693,39 @@ function clearPointReadout() {
   elements.tooltip.hidden = true;
 }
 
-function selectPoint(x, y) {
-  const position = cssToLonLat(x, y);
-  const value = analysisAtCss(x, y);
+function updatePointReadout(position, value) {
   elements.coordinate.textContent = `緯度 ${position.latitude.toFixed(5)} / 経度 ${position.longitude.toFixed(5)}`;
   elements.elevation.textContent = value ? formatMeters(value.elevation) : "データなし";
   elements.surrounding.textContent = value ? formatMeters(value.surrounding) : "データなし";
   elements.depth.textContent = value ? formatMeters(value.depth, true) : "データなし";
+}
+
+function lonLatToCss(position) {
+  const size = canvasCssSize();
+  const center = currentCenterWorld();
+  const target = lonLatToWorldPixel(position.longitude, position.latitude, state.zoom);
+  const worldWidth = TILE_SIZE * (2 ** state.zoom);
+  let deltaX = target.x - center.x;
+  if (deltaX > worldWidth / 2) deltaX -= worldWidth;
+  if (deltaX < -worldWidth / 2) deltaX += worldWidth;
+  return { x: size.width / 2 + deltaX, y: size.height / 2 + target.y - center.y };
+}
+
+function restoreSelectedPoint() {
+  if (!state.selectedPoint || !state.analysis) return;
+  const point = lonLatToCss(state.selectedPoint);
+  const size = canvasCssSize();
+  if (point.x < 0 || point.y < 0 || point.x >= size.width || point.y >= size.height) {
+    clearPointReadout({ clearSelection: true });
+    return;
+  }
+  updatePointReadout(state.selectedPoint, analysisAtCss(point.x, point.y));
+}
+
+function selectPoint(x, y) {
+  const position = cssToLonLat(x, y);
+  state.selectedPoint = position;
+  updatePointReadout(position, analysisAtCss(x, y));
 }
 
 function updateTooltip(event) {
@@ -759,21 +841,216 @@ elements.canvas.addEventListener("wheel", (event) => {
   setZoom(state.zoom + (event.deltaY < 0 ? 1 : -1), point.x, point.y);
 }, { passive: false });
 
+async function writeTextToClipboard(text) {
+  try {
+    if (!navigator.clipboard?.writeText) throw new Error("Clipboard API unavailable");
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    const copied = document.execCommand("copy");
+    textarea.remove();
+    return copied;
+  }
+}
+
+function setActionStatus(button, label, status, text, announcement) {
+  window.clearTimeout(button._statusResetTimer);
+  button.classList.toggle("is-success", status === "success");
+  button.classList.toggle("is-error", status === "error");
+  label.textContent = text;
+  elements.shareStatus.textContent = announcement;
+  if (status === "idle") return;
+  button._statusResetTimer = window.setTimeout(() => {
+    button.classList.remove("is-success", "is-error");
+    label.textContent = button === elements.copyLink ? "リンク取得" : "PNG保存";
+    elements.shareStatus.textContent = "";
+  }, 2600);
+}
+
+async function copyShareLink() {
+  setActionStatus(elements.copyLink, elements.copyLinkLabel, "idle", "コピー中", "共有リンクをコピーしています");
+  const copied = await writeTextToClipboard(currentShareUrl());
+  setActionStatus(
+    elements.copyLink,
+    elements.copyLinkLabel,
+    copied ? "success" : "error",
+    copied ? "コピー済" : "失敗",
+    copied ? "現在の表示を開ける共有リンクをコピーしました" : "共有リンクをコピーできませんでした",
+  );
+}
+
+function fittedCanvasText(exportContext, text, x, y, maxWidth) {
+  if (exportContext.measureText(text).width <= maxWidth) {
+    exportContext.fillText(text, x, y);
+    return;
+  }
+  let shortened = text;
+  while (shortened.length > 1 && exportContext.measureText(`${shortened}…`).width > maxWidth) {
+    shortened = shortened.slice(0, -1);
+  }
+  exportContext.fillText(`${shortened}…`, x, y);
+}
+
+function drawExportLegend(exportContext, width, mapTop, compact) {
+  const legendWidth = compact ? 126 : 150;
+  const legendHeight = compact ? 122 : 140;
+  const left = width - legendWidth - 12;
+  const top = mapTop + 12;
+  exportContext.fillStyle = "rgb(255 255 255 / 94%)";
+  exportContext.fillRect(left, top, legendWidth, legendHeight);
+  exportContext.strokeStyle = "rgb(42 127 120 / 85%)";
+  exportContext.lineWidth = 2;
+  exportContext.strokeRect(left, top, legendWidth, legendHeight);
+  exportContext.fillStyle = "#17344b";
+  exportContext.font = `800 ${compact ? 11 : 13}px sans-serif`;
+  exportContext.fillText("周囲より低い", left + 9, top + 19);
+  const entries = [
+    ["#57c8f2", "0.5–2 m"],
+    ["#167cc1", "2–5 m"],
+    ["#4d3cb4", "5–10 m"],
+    ["#9d277d", "10 m以上"],
+  ];
+  exportContext.font = `700 ${compact ? 9 : 11}px sans-serif`;
+  entries.forEach(([color, text], index) => {
+    const rowTop = top + (compact ? 27 : 31) + index * (compact ? 19 : 21);
+    exportContext.fillStyle = color;
+    exportContext.fillRect(left + 9, rowTop, compact ? 20 : 25, compact ? 9 : 11);
+    exportContext.fillStyle = "#33414e";
+    exportContext.fillText(text, left + (compact ? 35 : 41), rowTop + (compact ? 8 : 10));
+  });
+  exportContext.fillStyle = "#8a3127";
+  exportContext.font = `800 ${compact ? 8 : 9}px sans-serif`;
+  exportContext.fillText("危険度ではありません", left + 9, top + legendHeight - 8);
+}
+
+function createExportCanvas() {
+  const { width, height } = canvasCssSize();
+  const compact = width <= 520;
+  const headerHeight = compact ? 58 : 64;
+  const footerHeight = compact ? 58 : 42;
+  const exportScale = Math.min(2, Math.max(1, state.deviceScale));
+  const exportCanvas = document.createElement("canvas");
+  exportCanvas.width = Math.round(width * exportScale);
+  exportCanvas.height = Math.round((headerHeight + height + footerHeight) * exportScale);
+  const exportContext = exportCanvas.getContext("2d", { alpha: false });
+  if (!exportContext) throw new Error("Export canvas unavailable");
+  exportContext.scale(exportScale, exportScale);
+
+  const headerGradient = exportContext.createLinearGradient(0, 0, width, 0);
+  headerGradient.addColorStop(0, "#062846");
+  headerGradient.addColorStop(0.55, "#0b4f7b");
+  headerGradient.addColorStop(1, "#1677a3");
+  exportContext.fillStyle = headerGradient;
+  exportContext.fillRect(0, 0, width, headerHeight);
+  exportContext.fillStyle = "#55c4dc";
+  exportContext.fillRect(0, headerHeight - 3, width, 3);
+  exportContext.fillStyle = "#fff";
+  exportContext.font = `850 ${compact ? 16 : 21}px sans-serif`;
+  fittedCanvasText(exportContext, "周囲より低い地形チェッカー", 14, compact ? 24 : 28, width - 28);
+  exportContext.fillStyle = "#cde5f0";
+  exportContext.font = `700 ${compact ? 9 : 11}px sans-serif`;
+  fittedCanvasText(exportContext, `Bousai Wx Lab｜${elements.stampTitle.textContent}`, 14, compact ? 43 : 49, width - 28);
+
+  exportContext.drawImage(elements.canvas, 0, headerHeight, width, height);
+  const stampWidth = Math.max(130, Math.min(compact ? width - 166 : 500, width - 188));
+  exportContext.fillStyle = "rgb(5 43 75 / 92%)";
+  exportContext.fillRect(12, headerHeight + 12, stampWidth, compact ? 48 : 54);
+  exportContext.fillStyle = "#fff";
+  exportContext.font = `800 ${compact ? 11 : 14}px sans-serif`;
+  fittedCanvasText(exportContext, elements.stampTitle.textContent, 21, headerHeight + (compact ? 31 : 34), stampWidth - 18);
+  exportContext.fillStyle = "#cde5f0";
+  exportContext.font = `650 ${compact ? 8 : 10}px sans-serif`;
+  fittedCanvasText(exportContext, elements.stampStatus.textContent, 21, headerHeight + (compact ? 48 : 54), stampWidth - 18);
+  drawExportLegend(exportContext, width, headerHeight, compact);
+
+  const scaleSpec = scaleBarSpec(state.latitude, state.zoom, compact ? 90 : 120);
+  const scaleTop = headerHeight + height - 36;
+  exportContext.fillStyle = "rgb(5 43 75 / 88%)";
+  exportContext.fillRect(12, scaleTop, Math.round(scaleSpec.pixels) + 16, 28);
+  exportContext.fillStyle = "#fff";
+  exportContext.font = `800 ${compact ? 9 : 10}px sans-serif`;
+  exportContext.fillText(scaleSpec.label, 18, scaleTop + 12);
+  exportContext.strokeStyle = "#fff";
+  exportContext.lineWidth = 2;
+  exportContext.beginPath();
+  exportContext.moveTo(18, scaleTop + 17);
+  exportContext.lineTo(18, scaleTop + 24);
+  exportContext.lineTo(18 + scaleSpec.pixels, scaleTop + 24);
+  exportContext.lineTo(18 + scaleSpec.pixels, scaleTop + 17);
+  exportContext.stroke();
+
+  const footerTop = headerHeight + height;
+  exportContext.fillStyle = "#062846";
+  exportContext.fillRect(0, footerTop, width, footerHeight);
+  exportContext.fillStyle = "#d9e8f2";
+  exportContext.font = `650 ${compact ? 8 : 9}px sans-serif`;
+  fittedCanvasText(exportContext, "出典：国土地理院「地理院タイル」・標高タイルを加工", 12, footerTop + 17, width - 24);
+  fittedCanvasText(exportContext, "周囲との標高差を示す参考表示です。浸水想定や災害危険度ではありません。", 12, footerTop + (compact ? 36 : 32), width - 24);
+  if (compact) {
+    fittedCanvasText(exportContext, "避難や土地利用は公式ハザードマップと現地状況も確認してください。", 12, footerTop + 51, width - 24);
+  }
+  return exportCanvas;
+}
+
+function exportFileName() {
+  const now = new Date();
+  const timestamp = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, "0"),
+    String(now.getDate()).padStart(2, "0"),
+    "-",
+    String(now.getHours()).padStart(2, "0"),
+    String(now.getMinutes()).padStart(2, "0"),
+  ].join("");
+  return `terrain-depression-z${state.zoom}-${radiusLabel()}-${timestamp}.png`;
+}
+
+async function downloadCurrentMap() {
+  setActionStatus(elements.download, elements.downloadLabel, "idle", "生成中", "PNG画像を生成しています");
+  elements.download.disabled = true;
+  try {
+    scheduleDraw();
+    await new Promise((resolve) => window.requestAnimationFrame(() => window.requestAnimationFrame(resolve)));
+    const exportCanvas = createExportCanvas();
+    const blob = await new Promise((resolve, reject) => {
+      exportCanvas.toBlob((value) => value ? resolve(value) : reject(new Error("PNG export failed")), "image/png");
+    });
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = exportFileName();
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+    setActionStatus(elements.download, elements.downloadLabel, "success", "保存済", "現在の地図をPNG画像として保存しました");
+  } catch {
+    setActionStatus(elements.download, elements.downloadLabel, "error", "失敗", "PNG画像を保存できませんでした");
+  } finally {
+    elements.download.disabled = false;
+  }
+}
+
 elements.zoomIn.addEventListener("click", () => setZoom(state.zoom + 1));
 elements.zoomOut.addEventListener("click", () => setZoom(state.zoom - 1));
 elements.fit.addEventListener("click", resetView);
 
-elements.radius.addEventListener("change", () => invalidateAnalysis("判定半径を変更しました"));
-elements.threshold.addEventListener("change", () => invalidateAnalysis("表示下限を変更しました"));
+elements.radius.addEventListener("change", () => invalidateAnalysis("判定半径を変更しました", { preserveSelection: true }));
+elements.threshold.addEventListener("change", () => invalidateAnalysis("表示下限を変更しました", { preserveSelection: true }));
 elements.baseMap.addEventListener("change", scheduleDraw);
 elements.baseMapOpacity.addEventListener("input", () => {
   elements.baseMapOpacityValue.value = `${elements.baseMapOpacity.value}%`;
   scheduleDraw();
 });
 elements.terrainToggle.addEventListener("change", () => {
-  const disabled = !elements.terrainToggle.checked;
-  elements.terrainStyle.disabled = disabled;
-  elements.terrainOpacity.disabled = disabled;
+  syncTerrainControls();
   scheduleDraw();
 });
 elements.terrainStyle.addEventListener("change", scheduleDraw);
@@ -785,6 +1062,8 @@ elements.opacity.addEventListener("input", () => {
   elements.opacityValue.value = `${elements.opacity.value}%`;
   scheduleDraw();
 });
+elements.copyLink.addEventListener("click", () => void copyShareLink());
+elements.download.addEventListener("click", () => void downloadCurrentMap());
 
 const resizeObserver = new ResizeObserver(() => {
   resizeCanvas();
@@ -792,11 +1071,13 @@ const resizeObserver = new ResizeObserver(() => {
 });
 resizeObserver.observe(elements.canvasWrap);
 
+const restoredSharedView = applySharedViewState();
+syncTerrainControls();
 updateZoomControl();
 elements.opacityValue.value = `${elements.opacity.value}%`;
 elements.terrainOpacityValue.value = `${elements.terrainOpacity.value}%`;
 elements.baseMapOpacityValue.value = `${elements.baseMapOpacity.value}%`;
-updateStamp("標高を解析します");
+updateStamp(restoredSharedView ? "共有リンクの表示を復元し、標高を解析します" : "標高を解析します");
 resizeCanvas();
 scheduleDraw();
 scheduleAnalysis();

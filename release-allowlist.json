@@ -9,6 +9,7 @@
     "SECURITY.md",
     "app.js",
     "assets/bousaiwxlab-site-icon.png",
+    "assets/terrain-depression-share-card.png",
     "index.html",
     "release-allowlist.json",
     "release-manifest.json",
@@ -23,6 +24,7 @@
     "127.0.0.1",
     "about.x.com",
     "bousai-wx-lab.com",
+    "bousai-wx-lab.github.io",
     "cyberjapandata.gsi.go.jp",
     "disaportal.gsi.go.jp",
     "github.com",
@@ -38,6 +40,16 @@
       "mime_type": "image/png",
       "width": 512,
       "height": 512,
+      "bit_depth": 8,
+      "color_type": 2
+    },
+    {
+      "path": "assets/terrain-depression-share-card.png",
+      "bytes": 2587161,
+      "sha256": "d62c3ad73ac14bd46fa6300b155d3d1243cd20f3404c5a7f8fab1699e2615afd",
+      "mime_type": "image/png",
+      "width": 1731,
+      "height": 909,
       "bit_depth": 8,
       "color_type": 2
     }
