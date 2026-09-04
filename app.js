@@ -15,7 +15,7 @@ import {
   tileCoordinate,
   tileSourceZoom,
   worldPixelToLonLat,
-} from "./terrain.js";
+} from "./terrain.js?v=20260905-1";
 
 const GSI_ORIGIN = "https://cyberjapandata.gsi.go.jp";
 const DEM_SOURCES = ["dem5a_png", "dem5b_png", "dem5c_png", "dem_png"];
@@ -350,8 +350,12 @@ function radiusLabel() {
   return `${meters}m`;
 }
 
+function thresholdLabel() {
+  return `${Number(Number(elements.threshold.value).toPrecision(3))}m以上`;
+}
+
 function updateStamp(message) {
-  elements.stampTitle.textContent = `周囲平均との差（半径${radiusLabel()}）`;
+  elements.stampTitle.textContent = `周囲平均との差（半径${radiusLabel()}・着色${thresholdLabel()}）`;
   elements.stampStatus.textContent = message;
 }
 
@@ -899,10 +903,10 @@ function fittedCanvasText(exportContext, text, x, y, maxWidth) {
 }
 
 function drawExportLegend(exportContext, width, mapTop, compact) {
-  const legendWidth = compact ? 126 : 150;
-  const legendHeight = compact ? 122 : 140;
+  const legendWidth = compact ? 132 : 156;
+  const legendHeight = compact ? 184 : 220;
   const left = width - legendWidth - 12;
-  const top = mapTop + 12;
+  const top = mapTop + (compact ? 54 : 12);
   exportContext.fillStyle = "rgb(255 255 255 / 94%)";
   exportContext.fillRect(left, top, legendWidth, legendHeight);
   exportContext.strokeStyle = "rgb(42 127 120 / 85%)";
@@ -912,14 +916,18 @@ function drawExportLegend(exportContext, width, mapTop, compact) {
   exportContext.font = `800 ${compact ? 11 : 13}px sans-serif`;
   exportContext.fillText("周囲より低い", left + 9, top + 19);
   const entries = [
-    ["#57c8f2", "0.5–2 m"],
-    ["#167cc1", "2–5 m"],
-    ["#4d3cb4", "5–10 m"],
+    ["#66d3f2", "0.5–1 m"],
+    ["#45bfea", "1–1.5 m"],
+    ["#2aa5dc", "1.5–2 m"],
+    ["#167cc1", "2–3 m"],
+    ["#315fb8", "3–4 m"],
+    ["#4d49b5", "4–5 m"],
+    ["#6b38a6", "5–10 m"],
     ["#9d277d", "10 m以上"],
   ];
   exportContext.font = `700 ${compact ? 9 : 11}px sans-serif`;
   entries.forEach(([color, text], index) => {
-    const rowTop = top + (compact ? 27 : 31) + index * (compact ? 19 : 21);
+    const rowTop = top + (compact ? 27 : 31) + index * (compact ? 18 : 21);
     exportContext.fillStyle = color;
     exportContext.fillRect(left + 9, rowTop, compact ? 20 : 25, compact ? 9 : 11);
     exportContext.fillStyle = "#33414e";
@@ -959,15 +967,12 @@ function createExportCanvas() {
   fittedCanvasText(exportContext, `Bousai Wx Lab｜${elements.stampTitle.textContent}`, 14, compact ? 43 : 49, width - 28);
 
   exportContext.drawImage(elements.canvas, 0, headerHeight, width, height);
-  const stampWidth = Math.max(130, Math.min(compact ? width - 166 : 500, width - 188));
+  const stampWidth = Math.max(130, Math.min(compact ? width - 24 : 540, width - 188));
   exportContext.fillStyle = "rgb(5 43 75 / 92%)";
-  exportContext.fillRect(12, headerHeight + 12, stampWidth, compact ? 48 : 54);
+  exportContext.fillRect(12, headerHeight + 12, stampWidth, compact ? 34 : 40);
   exportContext.fillStyle = "#fff";
   exportContext.font = `800 ${compact ? 11 : 14}px sans-serif`;
-  fittedCanvasText(exportContext, elements.stampTitle.textContent, 21, headerHeight + (compact ? 31 : 34), stampWidth - 18);
-  exportContext.fillStyle = "#cde5f0";
-  exportContext.font = `650 ${compact ? 8 : 10}px sans-serif`;
-  fittedCanvasText(exportContext, elements.stampStatus.textContent, 21, headerHeight + (compact ? 48 : 54), stampWidth - 18);
+  fittedCanvasText(exportContext, elements.stampTitle.textContent, 21, headerHeight + (compact ? 34 : 38), stampWidth - 18);
   drawExportLegend(exportContext, width, headerHeight, compact);
 
   const scaleSpec = scaleBarSpec(state.latitude, state.zoom, compact ? 90 : 120);

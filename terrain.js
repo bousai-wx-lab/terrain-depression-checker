@@ -176,9 +176,13 @@ export function calculateRelativeDepth(centerElevation, surroundingElevations, m
 
 export function depthColor(depth) {
   if (!Number.isFinite(depth) || depth < 0.5) return null;
-  if (depth < 2) return [87, 200, 242];
-  if (depth < 5) return [22, 124, 193];
-  if (depth < 10) return [77, 60, 180];
+  if (depth < 1) return [102, 211, 242];
+  if (depth < 1.5) return [69, 191, 234];
+  if (depth < 2) return [42, 165, 220];
+  if (depth < 3) return [22, 124, 193];
+  if (depth < 4) return [49, 95, 184];
+  if (depth < 5) return [77, 73, 181];
+  if (depth < 10) return [107, 56, 166];
   return [157, 39, 125];
 }
 

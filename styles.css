@@ -582,7 +582,7 @@ dd {
   z-index: 4;
   display: grid;
   gap: 2px;
-  max-width: min(500px, calc(100% - 240px));
+  max-width: min(550px, calc(100% - 240px));
   padding: 7px 10px;
   border: 1px solid rgb(170 210 230 / 42%);
   border-radius: 6px;
@@ -595,6 +595,7 @@ dd {
 .map-stamp strong {
   font-size: 16px;
   line-height: 1.25;
+  white-space: nowrap;
 }
 
 .map-stamp span {
@@ -716,10 +717,14 @@ dd {
   border: 1px solid rgba(16, 37, 54, 0.25);
 }
 
-.legend-color.c1 { background: #57c8f2; }
-.legend-color.c2 { background: #167cc1; }
-.legend-color.c3 { background: #4d3cb4; }
-.legend-color.c4 { background: #9d277d; }
+.legend-color.c1 { background: #66d3f2; }
+.legend-color.c2 { background: #45bfea; }
+.legend-color.c3 { background: #2aa5dc; }
+.legend-color.c4 { background: #167cc1; }
+.legend-color.c5 { background: #315fb8; }
+.legend-color.c6 { background: #4d49b5; }
+.legend-color.c7 { background: #6b38a6; }
+.legend-color.c8 { background: #9d277d; }
 
 .loading-panel {
   position: absolute;
@@ -1059,7 +1064,7 @@ dd {
 
   .map-stamp {
     left: 54px;
-    max-width: calc(100% - 116px);
+    max-width: calc(100% - 66px);
     padding: 6px 8px;
   }
 

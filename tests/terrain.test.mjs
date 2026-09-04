@@ -31,9 +31,14 @@ assert.equal(calculateRelativeDepth(8, [10, 11], 10), null);
 assert.equal(calculateRelativeDepth(Number.NaN, Array(10).fill(10)), null);
 
 assert.equal(depthColor(0.49), null);
-assert.deepEqual(depthColor(0.5), [87, 200, 242]);
+assert.deepEqual(depthColor(0.5), [102, 211, 242]);
+assert.deepEqual(depthColor(0.99), [102, 211, 242]);
+assert.deepEqual(depthColor(1), [69, 191, 234]);
+assert.deepEqual(depthColor(1.5), [42, 165, 220]);
 assert.deepEqual(depthColor(2), [22, 124, 193]);
-assert.deepEqual(depthColor(5), [77, 60, 180]);
+assert.deepEqual(depthColor(3), [49, 95, 184]);
+assert.deepEqual(depthColor(4), [77, 73, 181]);
+assert.deepEqual(depthColor(5), [107, 56, 166]);
 assert.deepEqual(depthColor(10), [157, 39, 125]);
 
 const tokyo = lonLatToWorldPixel(139.767, 35.681, 14);
@@ -102,4 +107,4 @@ assert.deepEqual(invalidShare, {});
 assert.deepEqual(parseShareState("?v=1"), {});
 assert.deepEqual(parseShareState("?lat=35&lon=139&z=14"), {});
 
-process.stdout.write("TERRAIN_ALGORITHM_TESTS_OK cases=42\nSHARE_STATE_TESTS_OK cases=15\n");
+process.stdout.write("TERRAIN_ALGORITHM_TESTS_OK cases=47\nSHARE_STATE_TESTS_OK cases=15\n");

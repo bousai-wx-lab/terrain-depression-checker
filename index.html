@@ -32,7 +32,7 @@
     <meta name="twitter:image:alt" content="周囲より低い地形チェッカーの機能と地図表示を紹介するBousai Wx Labのカード画像" />
     <link rel="icon" type="image/png" href="./assets/bousaiwxlab-site-icon.png" />
     <title>周囲より低い地形チェッカー | Bousai Wx Lab</title>
-    <link rel="stylesheet" href="./styles.css?v=20260905-3" />
+    <link rel="stylesheet" href="./styles.css?v=20260905-4" />
   </head>
   <body>
     <header class="topbar">
@@ -183,7 +183,7 @@
         <div id="canvasWrap" class="canvas-wrap">
           <canvas id="mapCanvas" width="1200" height="800" aria-label="周囲より低い地形の地図"></canvas>
           <div class="map-stamp" aria-live="polite">
-            <strong id="mapStampTitle">周囲平均との差（半径500m）</strong>
+            <strong id="mapStampTitle">周囲平均との差（半径500m・着色1m以上）</strong>
             <span id="mapStampStatus" class="visually-hidden">地図を読み込み中</span>
           </div>
           <div class="map-zoom-controls" aria-label="地図操作">
@@ -194,10 +194,14 @@
           </div>
           <div class="legend" aria-label="周囲との差の凡例">
             <strong>周囲より低い</strong>
-            <span><i class="legend-color c1"></i>0.5–2 m</span>
-            <span><i class="legend-color c2"></i>2–5 m</span>
-            <span><i class="legend-color c3"></i>5–10 m</span>
-            <span><i class="legend-color c4"></i>10 m以上</span>
+            <span><i class="legend-color c1"></i>0.5–1 m</span>
+            <span><i class="legend-color c2"></i>1–1.5 m</span>
+            <span><i class="legend-color c3"></i>1.5–2 m</span>
+            <span><i class="legend-color c4"></i>2–3 m</span>
+            <span><i class="legend-color c5"></i>3–4 m</span>
+            <span><i class="legend-color c6"></i>4–5 m</span>
+            <span><i class="legend-color c7"></i>5–10 m</span>
+            <span><i class="legend-color c8"></i>10 m以上</span>
             <small>危険度ではありません</small>
           </div>
           <div id="loadingPanel" class="loading-panel" role="status" aria-live="polite" hidden></div>
@@ -223,6 +227,6 @@
     </footer>
 
     <noscript>このツールの利用にはJavaScriptが必要です。</noscript>
-    <script type="module" src="./app.js?v=20260904-7"></script>
+    <script type="module" src="./app.js?v=20260905-1"></script>
   </body>
 </html>
