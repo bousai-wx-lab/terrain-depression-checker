@@ -32,7 +32,7 @@
     <meta name="twitter:image:alt" content="周囲より低い地形チェッカーの機能と地図表示を紹介するBousai Wx Labのカード画像" />
     <link rel="icon" type="image/png" href="./assets/bousaiwxlab-site-icon.png" />
     <title>周囲より低い地形チェッカー | Bousai Wx Lab</title>
-    <link rel="stylesheet" href="./styles.css?v=20260905-4" />
+    <link rel="stylesheet" href="./styles.css?v=20260905-5" />
   </head>
   <body>
     <header class="topbar">
@@ -154,6 +154,20 @@
               <output id="opacityValue" for="opacityRange">65%</output>
             </span>
           </label>
+          <div class="guide-controls" role="group" aria-labelledby="guideControlsTitle">
+            <span id="guideControlsTitle" class="guide-title">中心ガイド</span>
+            <div class="guide-toggle-row">
+              <label class="check-label">
+                <input id="centerMarkToggle" type="checkbox" />
+                <span>中心の＋</span>
+              </label>
+              <label class="check-label">
+                <input id="radiusGuideToggle" type="checkbox" />
+                <span>判定半径の円</span>
+              </label>
+            </div>
+            <small>円は画面中心で見た判定半径の目安です</small>
+          </div>
         </section>
 
         <section class="readout" aria-labelledby="pointHeading">
@@ -227,6 +241,6 @@
     </footer>
 
     <noscript>このツールの利用にはJavaScriptが必要です。</noscript>
-    <script type="module" src="./app.js?v=20260905-1"></script>
+    <script type="module" src="./app.js?v=20260905-2"></script>
   </body>
 </html>

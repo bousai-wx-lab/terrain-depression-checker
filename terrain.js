@@ -67,6 +67,8 @@ export function parseShareState(search) {
   if (terrainOpacity !== null) parsed.terrainOpacity = terrainOpacity;
   const depressionOpacity = opacityValue(params.get("depressionOpacity"), 20, 90);
   if (depressionOpacity !== null) parsed.depressionOpacity = depressionOpacity;
+  if (["0", "1"].includes(params.get("centerMark"))) parsed.centerMark = params.get("centerMark") === "1";
+  if (["0", "1"].includes(params.get("radiusGuide"))) parsed.radiusGuide = params.get("radiusGuide") === "1";
 
   const pointLatitude = finiteInRange(params.get("pointLat"), 20, 48);
   const pointLongitude = finiteInRange(params.get("pointLon"), 118, 154);
@@ -90,6 +92,8 @@ export function serializeShareState(view) {
   params.set("terrainStyle", String(view.terrainStyle));
   params.set("terrainOpacity", String(Math.round(Number(view.terrainOpacity))));
   params.set("depressionOpacity", String(Math.round(Number(view.depressionOpacity))));
+  params.set("centerMark", view.centerMark ? "1" : "0");
+  params.set("radiusGuide", view.radiusGuide ? "1" : "0");
   if (view.selectedPoint) {
     params.set("pointLat", Number(view.selectedPoint.latitude).toFixed(6));
     params.set("pointLon", Number(view.selectedPoint.longitude).toFixed(6));

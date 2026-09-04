@@ -15,7 +15,7 @@ import {
   tileCoordinate,
   tileSourceZoom,
   worldPixelToLonLat,
-} from "./terrain.js?v=20260905-1";
+} from "./terrain.js?v=20260905-2";
 
 const GSI_ORIGIN = "https://cyberjapandata.gsi.go.jp";
 const DEM_SOURCES = ["dem5a_png", "dem5b_png", "dem5c_png", "dem_png"];
@@ -41,6 +41,8 @@ const elements = {
   terrainOpacityValue: document.querySelector("#terrainOpacityValue"),
   opacity: document.querySelector("#opacityRange"),
   opacityValue: document.querySelector("#opacityValue"),
+  centerMarkToggle: document.querySelector("#centerMarkToggle"),
+  radiusGuideToggle: document.querySelector("#radiusGuideToggle"),
   zoomIn: document.querySelector("#zoomInButton"),
   zoomOut: document.querySelector("#zoomOutButton"),
   fit: document.querySelector("#fitButton"),
@@ -148,6 +150,8 @@ function applySharedViewState() {
   if (shared.terrainStyle) elements.terrainStyle.value = shared.terrainStyle;
   if (Number.isFinite(shared.terrainOpacity)) elements.terrainOpacity.value = String(shared.terrainOpacity);
   if (Number.isFinite(shared.depressionOpacity)) elements.opacity.value = String(shared.depressionOpacity);
+  if (typeof shared.centerMark === "boolean") elements.centerMarkToggle.checked = shared.centerMark;
+  if (typeof shared.radiusGuide === "boolean") elements.radiusGuideToggle.checked = shared.radiusGuide;
   if (shared.selectedPoint) state.selectedPoint = shared.selectedPoint;
   clampView();
   return Object.keys(shared).length > 0;
@@ -173,6 +177,8 @@ function currentShareUrl() {
     terrainStyle: elements.terrainStyle.value,
     terrainOpacity: elements.terrainOpacity.value,
     depressionOpacity: elements.opacity.value,
+    centerMark: elements.centerMarkToggle.checked,
+    radiusGuide: elements.radiusGuideToggle.checked,
     selectedPoint: state.selectedPoint,
   });
   url.hash = "";
@@ -319,12 +325,52 @@ function drawAnalysis() {
   context.restore();
 }
 
+function drawCenterGuides() {
+  if (!elements.centerMarkToggle.checked && !elements.radiusGuideToggle.checked) return;
+  const scale = state.deviceScale;
+  const centerX = elements.canvas.width / 2;
+  const centerY = elements.canvas.height / 2;
+
+  context.save();
+  if (elements.radiusGuideToggle.checked) {
+    const radius = Number(elements.radius.value) / metersPerPixel(state.latitude, state.zoom) * scale;
+    context.beginPath();
+    context.arc(centerX, centerY, radius, 0, Math.PI * 2);
+    context.setLineDash([7 * scale, 5 * scale]);
+    context.lineWidth = 5 * scale;
+    context.strokeStyle = "rgba(255, 255, 255, 0.9)";
+    context.stroke();
+    context.lineWidth = 2 * scale;
+    context.strokeStyle = "rgba(4, 75, 120, 0.9)";
+    context.stroke();
+  }
+
+  if (elements.centerMarkToggle.checked) {
+    const arm = 12 * scale;
+    context.setLineDash([]);
+    context.lineCap = "round";
+    context.beginPath();
+    context.moveTo(centerX - arm, centerY);
+    context.lineTo(centerX + arm, centerY);
+    context.moveTo(centerX, centerY - arm);
+    context.lineTo(centerX, centerY + arm);
+    context.lineWidth = 6 * scale;
+    context.strokeStyle = "rgba(255, 255, 255, 0.95)";
+    context.stroke();
+    context.lineWidth = 2.5 * scale;
+    context.strokeStyle = "#063f68";
+    context.stroke();
+  }
+  context.restore();
+}
+
 function draw() {
   state.drawPending = false;
   resizeCanvas();
   drawBaseMap();
   drawTerrainLayer();
   drawAnalysis();
+  drawCenterGuides();
   updateScaleBar();
 }
 
@@ -1067,6 +1113,8 @@ elements.opacity.addEventListener("input", () => {
   elements.opacityValue.value = `${elements.opacity.value}%`;
   scheduleDraw();
 });
+elements.centerMarkToggle.addEventListener("change", scheduleDraw);
+elements.radiusGuideToggle.addEventListener("change", scheduleDraw);
 elements.copyLink.addEventListener("click", () => void copyShareLink());
 elements.download.addEventListener("click", () => void downloadCurrentMap());
 

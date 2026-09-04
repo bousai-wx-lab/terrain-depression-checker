@@ -86,6 +86,8 @@ const shareQuery = serializeShareState({
   terrainStyle: "color",
   terrainOpacity: 70,
   depressionOpacity: 90,
+  centerMark: true,
+  radiusGuide: true,
   selectedPoint: { latitude: 35.68, longitude: 139.77 },
 });
 const parsedShare = parseShareState(shareQuery);
@@ -100,11 +102,14 @@ assert.equal(parsedShare.terrain, false);
 assert.equal(parsedShare.terrainStyle, "color");
 assert.equal(parsedShare.terrainOpacity, 70);
 assert.equal(parsedShare.depressionOpacity, 90);
+assert.equal(parsedShare.centerMark, true);
+assert.equal(parsedShare.radiusGuide, true);
 assert.deepEqual(parsedShare.selectedPoint, { latitude: 35.68, longitude: 139.77 });
 
-const invalidShare = parseShareState("?v=1&lat=90&lon=200&z=99&radius=7&threshold=99&base=evil&baseOpacity=41&terrain=yes&terrainStyle=other&terrainOpacity=-5&depressionOpacity=100");
+const invalidShare = parseShareState("?v=1&lat=90&lon=200&z=99&radius=7&threshold=99&base=evil&baseOpacity=41&terrain=yes&terrainStyle=other&terrainOpacity=-5&depressionOpacity=100&centerMark=yes&radiusGuide=2");
 assert.deepEqual(invalidShare, {});
+assert.deepEqual(parseShareState("?v=1&centerMark=0&radiusGuide=0"), { centerMark: false, radiusGuide: false });
 assert.deepEqual(parseShareState("?v=1"), {});
 assert.deepEqual(parseShareState("?lat=35&lon=139&z=14"), {});
 
-process.stdout.write("TERRAIN_ALGORITHM_TESTS_OK cases=47\nSHARE_STATE_TESTS_OK cases=15\n");
+process.stdout.write("TERRAIN_ALGORITHM_TESTS_OK cases=47\nSHARE_STATE_TESTS_OK cases=18\n");
