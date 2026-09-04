@@ -21,6 +21,9 @@ MANIFEST_PATH = ROOT / "release-manifest.json"
 
 EMAIL_PATTERN = re.compile(r"(?i)\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b")
 URL_PATTERN = re.compile(r"https?://[^\s<>\"')`]+")
+SAFE_NON_NETWORK_URLS = {
+    "http://" + "www.w3.org/2000/svg",
+}
 LOCAL_PATH_PATTERNS = (
     re.compile(r"/U[s]ers/[^/\s]+/"),
     re.compile(r"/h[o]me/[^/\s]+/"),
@@ -117,6 +120,8 @@ def scan_text(path_label: str, text: str, allowed_emails: set[str], allowed_host
             break
     for matched_url in URL_PATTERN.findall(text):
         url = matched_url.rstrip(".,;:")
+        if url in SAFE_NON_NETWORK_URLS:
+            continue
         host = (urlparse(url).hostname or "").lower()
         if host and host not in allowed_hosts:
             findings.append(f"unapproved external host {host}: {path_label}")
