@@ -32,6 +32,7 @@
     }
   ],
   "allowed_remote_urls": [
+    "https://github.com/bousai-wx-lab/terrain-depression-checker",
     "https://github.com/bousai-wx-lab/terrain-depression-checker.git"
   ],
   "max_file_bytes": 500000,
