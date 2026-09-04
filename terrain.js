@@ -178,6 +178,11 @@ export function calculateRelativeDepth(centerElevation, surroundingElevations, m
   };
 }
 
+export function elevationDifference(centerElevation, surroundingMean) {
+  if (!Number.isFinite(centerElevation) || !Number.isFinite(surroundingMean)) return null;
+  return Number(centerElevation) - Number(surroundingMean);
+}
+
 export function depthColor(depth) {
   if (!Number.isFinite(depth) || depth < 0.5) return null;
   if (depth < 1) return [102, 211, 242];

@@ -6,6 +6,7 @@ import {
   calculateRelativeDepth,
   decodeElevationRgb,
   depthColor,
+  elevationDifference,
   lonLatToWorldPixel,
   metersPerPixel,
   minimumRingSamples,
@@ -15,7 +16,7 @@ import {
   tileCoordinate,
   tileSourceZoom,
   worldPixelToLonLat,
-} from "./terrain.js?v=20260905-2";
+} from "./terrain.js?v=20260905-3";
 
 const GSI_ORIGIN = "https://cyberjapandata.gsi.go.jp";
 const DEM_SOURCES = ["dem5a_png", "dem5b_png", "dem5c_png", "dem_png"];
@@ -401,7 +402,7 @@ function thresholdLabel() {
 }
 
 function updateStamp(message) {
-  elements.stampTitle.textContent = `周囲平均との差（半径${radiusLabel()}・着色${thresholdLabel()}）`;
+  elements.stampTitle.textContent = `周囲より低い量（半径${radiusLabel()}・着色${thresholdLabel()}）`;
   elements.stampStatus.textContent = message;
 }
 
@@ -538,8 +539,8 @@ function demTileAt(tileMap, zoom, worldX, worldY) {
 function formatMeters(value, signed = false) {
   if (!Number.isFinite(value)) return "--";
   const rounded = Math.abs(value) < 0.05 ? 0 : value;
-  const prefix = signed && rounded > 0 ? "+" : "";
-  return `${prefix}${rounded.toFixed(1)} m`;
+  const prefix = signed ? (rounded > 0 ? "+" : rounded < 0 ? "−" : "") : "";
+  return `${prefix}${Math.abs(rounded).toFixed(1)} m`;
 }
 
 function buildOverlay(result, width, height) {
@@ -731,6 +732,7 @@ function analysisAtCss(x, y) {
     elevation: result.elevations[index],
     surrounding: result.surroundings[index],
     depth: result.depths[index],
+    elevationDifference: elevationDifference(result.elevations[index], result.surroundings[index]),
   };
 }
 
@@ -747,7 +749,7 @@ function updatePointReadout(position, value) {
   elements.coordinate.textContent = `緯度 ${position.latitude.toFixed(5)} / 経度 ${position.longitude.toFixed(5)}`;
   elements.elevation.textContent = value ? formatMeters(value.elevation) : "データなし";
   elements.surrounding.textContent = value ? formatMeters(value.surrounding) : "データなし";
-  elements.depth.textContent = value ? formatMeters(value.depth, true) : "データなし";
+  elements.depth.textContent = value ? formatMeters(value.elevationDifference, true) : "データなし";
 }
 
 function lonLatToCss(position) {
@@ -789,7 +791,7 @@ function updateTooltip(event) {
     elements.tooltip.hidden = true;
     return;
   }
-  elements.tooltip.textContent = `標高 ${formatMeters(value.elevation)}\n周囲平均 ${formatMeters(value.surrounding)}\n周囲との差 ${formatMeters(value.depth, true)}`;
+  elements.tooltip.textContent = `標高 ${formatMeters(value.elevation)}\n周囲平均 ${formatMeters(value.surrounding)}\n標高差（地点−周囲平均） ${formatMeters(value.elevationDifference, true)}`;
   elements.tooltip.style.left = `${Math.min(point.x + 14, canvasCssSize().width - 205)}px`;
   elements.tooltip.style.top = `${Math.min(point.y + 14, canvasCssSize().height - 92)}px`;
   elements.tooltip.hidden = false;

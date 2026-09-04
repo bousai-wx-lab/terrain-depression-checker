@@ -175,7 +175,7 @@
           <dl>
             <div><dt>標高</dt><dd id="elevationValue">--</dd></div>
             <div><dt>周囲平均</dt><dd id="surroundingValue">--</dd></div>
-            <div><dt>周囲との差</dt><dd id="depthValue">--</dd></div>
+            <div><dt>標高差（地点−周囲平均）</dt><dd id="depthValue">--</dd></div>
           </dl>
           <p id="coordinateValue" class="coordinate">地図をクリックまたはタップ</p>
         </section>
@@ -197,7 +197,7 @@
         <div id="canvasWrap" class="canvas-wrap">
           <canvas id="mapCanvas" width="1200" height="800" aria-label="周囲より低い地形の地図"></canvas>
           <div class="map-stamp" aria-live="polite">
-            <strong id="mapStampTitle">周囲平均との差（半径500m・着色1m以上）</strong>
+            <strong id="mapStampTitle">周囲より低い量（半径500m・着色1m以上）</strong>
             <span id="mapStampStatus" class="visually-hidden">地図を読み込み中</span>
           </div>
           <div class="map-zoom-controls" aria-label="地図操作">
@@ -206,7 +206,7 @@
             <button id="zoomOutButton" type="button" aria-label="縮小" title="縮小">−</button>
             <button id="fitButton" type="button" aria-label="最初の範囲へ戻す" title="最初の範囲へ戻す">初</button>
           </div>
-          <div class="legend" aria-label="周囲との差の凡例">
+          <div class="legend" aria-label="周囲より低い量の凡例">
             <strong>周囲より低い</strong>
             <span><i class="legend-color c1"></i>0.5–1 m</span>
             <span><i class="legend-color c2"></i>1–1.5 m</span>
@@ -241,6 +241,6 @@
     </footer>
 
     <noscript>このツールの利用にはJavaScriptが必要です。</noscript>
-    <script type="module" src="./app.js?v=20260905-2"></script>
+    <script type="module" src="./app.js?v=20260905-3"></script>
   </body>
 </html>

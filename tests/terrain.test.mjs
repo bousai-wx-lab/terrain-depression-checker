@@ -6,6 +6,7 @@ import {
   calculateRelativeDepth,
   decodeElevationRgb,
   depthColor,
+  elevationDifference,
   lonLatToWorldPixel,
   metersPerPixel,
   minimumRingSamples,
@@ -29,6 +30,10 @@ assert.equal(result.surroundingMean, 10);
 assert.equal(result.depth, 2);
 assert.equal(calculateRelativeDepth(8, [10, 11], 10), null);
 assert.equal(calculateRelativeDepth(Number.NaN, Array(10).fill(10)), null);
+assert.equal(elevationDifference(8, 10), -2);
+assert.equal(elevationDifference(12, 10), 2);
+assert.equal(elevationDifference(10, 10), 0);
+assert.equal(elevationDifference(Number.NaN, 10), null);
 
 assert.equal(depthColor(0.49), null);
 assert.deepEqual(depthColor(0.5), [102, 211, 242]);
@@ -112,4 +117,4 @@ assert.deepEqual(parseShareState("?v=1&centerMark=0&radiusGuide=0"), { centerMar
 assert.deepEqual(parseShareState("?v=1"), {});
 assert.deepEqual(parseShareState("?lat=35&lon=139&z=14"), {});
 
-process.stdout.write("TERRAIN_ALGORITHM_TESTS_OK cases=47\nSHARE_STATE_TESTS_OK cases=18\n");
+process.stdout.write("TERRAIN_ALGORITHM_TESTS_OK cases=51\nSHARE_STATE_TESTS_OK cases=18\n");
