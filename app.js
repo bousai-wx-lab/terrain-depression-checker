@@ -32,6 +32,8 @@ const elements = {
   threshold: document.querySelector("#thresholdSelect"),
   analyze: document.querySelector("#analyzeButton"),
   baseMap: document.querySelector("#baseMapSelect"),
+  baseMapOpacity: document.querySelector("#baseMapOpacityRange"),
+  baseMapOpacityValue: document.querySelector("#baseMapOpacityValue"),
   terrainToggle: document.querySelector("#terrainToggle"),
   terrainStyle: document.querySelector("#terrainStyleSelect"),
   terrainOpacity: document.querySelector("#terrainOpacityRange"),
@@ -234,7 +236,7 @@ function drawTileLayer(layer, opacity = 1) {
 function drawBaseMap() {
   context.fillStyle = "#dce8ee";
   context.fillRect(0, 0, elements.canvas.width, elements.canvas.height);
-  drawTileLayer(elements.baseMap.value);
+  drawTileLayer(elements.baseMap.value, Number(elements.baseMapOpacity.value) / 100);
 }
 
 function drawTerrainLayer() {
@@ -771,6 +773,10 @@ elements.analyze.addEventListener("click", () => void analyzeVisibleArea());
 elements.radius.addEventListener("change", () => invalidateAnalysis("判定半径を変更しました"));
 elements.threshold.addEventListener("change", () => invalidateAnalysis("表示下限を変更しました"));
 elements.baseMap.addEventListener("change", scheduleDraw);
+elements.baseMapOpacity.addEventListener("input", () => {
+  elements.baseMapOpacityValue.value = `${elements.baseMapOpacity.value}%`;
+  scheduleDraw();
+});
 elements.terrainToggle.addEventListener("change", () => {
   const disabled = !elements.terrainToggle.checked;
   elements.terrainStyle.disabled = disabled;
@@ -796,6 +802,7 @@ resizeObserver.observe(elements.canvasWrap);
 updateZoomControl();
 elements.opacityValue.value = `${elements.opacity.value}%`;
 elements.terrainOpacityValue.value = `${elements.terrainOpacity.value}%`;
+elements.baseMapOpacityValue.value = `${elements.baseMapOpacity.value}%`;
 updateStamp("標高を解析します");
 resizeCanvas();
 scheduleDraw();
