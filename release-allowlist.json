@@ -21,6 +21,7 @@
     "127.0.0.1",
     "cyberjapandata.gsi.go.jp",
     "disaportal.gsi.go.jp",
+    "github.com",
     "localhost",
     "maps.gsi.go.jp"
   ],
@@ -30,8 +31,9 @@
       "email": "41898282+github-actions[bot]@users.noreply.github.com"
     }
   ],
-  "allowed_remote_urls": [],
+  "allowed_remote_urls": [
+    "https://github.com/bousai-wx-lab/terrain-depression-checker.git"
+  ],
   "max_file_bytes": 500000,
   "required_checkout_sha": "11d5960a326750d5838078e36cf38b85af677262"
 }
-

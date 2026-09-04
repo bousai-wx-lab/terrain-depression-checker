@@ -37,10 +37,10 @@
       "sha256": "cca9fb56ec438297b7589298fad163a7bd1f1bb2aac90a436c043f33ec33bdac"
     },
     {
-      "bytes": 891,
+      "bytes": 981,
       "mime_type": "application/json",
       "path": "release-allowlist.json",
-      "sha256": "dd52f040e693fdb33bc9a2000d50c69ea42ffda320ccf67770258a69293999c9"
+      "sha256": "965215446b90b12a38da50e9694d9385d8ffa13f253f950b4301e6249eb1be32"
     },
     {
       "bytes": 1814,
@@ -79,7 +79,7 @@
       "sha256": "a7f8d479e576fe812d2179d73ed28249c9b95068fed4de775e2dfb27df9f95d5"
     }
   ],
-  "generated_at_utc": "2026-09-04T09:13:47+00:00",
+  "generated_at_utc": "2026-09-04T09:38:31+00:00",
   "schema_version": 1,
   "tool_slug": "terrain-depression-checker"
 }
