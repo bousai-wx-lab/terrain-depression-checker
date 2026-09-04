@@ -13,6 +13,12 @@
       "sha256": "1ddd5d6391ed1d6bd867b44177a030194212daa633619c345f122af68c801995"
     },
     {
+      "bytes": 73,
+      "mime_type": "application/octet-stream",
+      "path": ".nojekyll",
+      "sha256": "ca656e33f8e358eed2ba12861f00e15782359055c2d92b10a2bf019edf8af953"
+    },
+    {
       "bytes": 2439,
       "mime_type": "text/markdown",
       "path": "README.md",
@@ -37,10 +43,10 @@
       "sha256": "7ea4a8ff97a2c29e71efb721cb1c9a0945cfa7d512889de35fff82e6ecd86661"
     },
     {
-      "bytes": 1048,
+      "bytes": 1065,
       "mime_type": "application/json",
       "path": "release-allowlist.json",
-      "sha256": "9128f89d8941ae93482664d0296b69bfdf07650b9927d9d62831e58f51369366"
+      "sha256": "324438f19748ca7ca13e810633d17e6cea8ba91ed44acfd67ecfe409ca34cb25"
     },
     {
       "bytes": 1814,
@@ -79,7 +85,7 @@
       "sha256": "a7f8d479e576fe812d2179d73ed28249c9b95068fed4de775e2dfb27df9f95d5"
     }
   ],
-  "generated_at_utc": "2026-09-04T09:43:37+00:00",
+  "generated_at_utc": "2026-09-04T09:53:20+00:00",
   "schema_version": 1,
   "tool_slug": "terrain-depression-checker"
 }

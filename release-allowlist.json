@@ -4,6 +4,7 @@
   "allowed_files": [
     ".github/workflows/privacy-gate.yml",
     ".gitignore",
+    ".nojekyll",
     "README.md",
     "SECURITY.md",
     "app.js",
