@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; base-uri 'none'; object-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: https://cyberjapandata.gsi.go.jp; connect-src 'self' https://cyberjapandata.gsi.go.jp; form-action 'none'; upgrade-insecure-requests"
+    />
+    <meta
+      name="description"
+      content="国土地理院の標高タイルから、周囲より低い地形をブラウザ内で見つけやすくする参考ツールです。"
+    />
+    <title>周囲より低い地形チェッカー | BousaiWxLab</title>
+    <link rel="stylesheet" href="./styles.css?v=20260904-1" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="title-row">
+        <div>
+          <h1>周囲より低い地形チェッカー</h1>
+          <p>標高から、周りより低い場所を見つけやすく</p>
+        </div>
+        <span class="brand" aria-label="BousaiWxLab">BousaiWxLab</span>
+      </div>
+    </header>
+
+    <main class="app">
+      <aside class="controls" aria-label="判定条件">
+        <section class="control-block primary-control">
+          <h2>判定条件</h2>
+          <label>
+            <span>周囲として比べる半径</span>
+            <select id="radiusSelect">
+              <option value="250">250 m</option>
+              <option value="500" selected>500 m</option>
+              <option value="1000">1 km</option>
+            </select>
+          </label>
+          <label>
+            <span>色を付ける差</span>
+            <select id="thresholdSelect">
+              <option value="0.5">0.5 m以上</option>
+              <option value="1" selected>1 m以上</option>
+              <option value="2">2 m以上</option>
+              <option value="5">5 m以上</option>
+            </select>
+          </label>
+          <button id="analyzeButton" class="primary-button" type="button">表示範囲を解析</button>
+        </section>
+
+        <section class="control-block">
+          <h2>地図表示</h2>
+          <label>
+            <span>背景地図</span>
+            <select id="baseMapSelect">
+              <option value="std">標準地図</option>
+              <option value="pale">淡色地図</option>
+              <option value="hillshademap">陰影起伏図</option>
+            </select>
+          </label>
+          <label class="range-label">
+            <span>色の濃さ</span>
+            <span class="range-line">
+              <input id="opacityRange" type="range" min="20" max="90" step="5" value="65" />
+              <output id="opacityValue" for="opacityRange">65%</output>
+            </span>
+          </label>
+        </section>
+
+        <section class="readout" aria-labelledby="pointHeading">
+          <h2 id="pointHeading">選択地点</h2>
+          <dl>
+            <div><dt>標高</dt><dd id="elevationValue">--</dd></div>
+            <div><dt>周囲平均</dt><dd id="surroundingValue">--</dd></div>
+            <div><dt>周囲との差</dt><dd id="depthValue">--</dd></div>
+          </dl>
+          <p id="coordinateValue" class="coordinate">地図をクリックまたはタップ</p>
+        </section>
+
+        <section class="notice important-notice">
+          <h2>この色が示すもの</h2>
+          <p>指定半径の16方向の平均標高より低い場所です。<strong>浸水想定や災害危険度ではありません。</strong></p>
+          <p><a href="https://disaportal.gsi.go.jp/" target="_blank" rel="noopener noreferrer">ハザードマップポータルサイトを確認</a></p>
+        </section>
+
+        <details class="privacy-note">
+          <summary>プライバシーと通信</summary>
+          <p>位置情報、住所、Cookie、ブラウザ保存領域、アクセス解析は使いません。表示範囲の地図・標高タイルだけを国土地理院から取得します。</p>
+        </details>
+      </aside>
+
+      <section class="map-panel" aria-label="地形地図">
+        <div id="canvasWrap" class="canvas-wrap">
+          <canvas id="mapCanvas" width="1200" height="800" aria-label="周囲より低い地形の地図"></canvas>
+          <div class="map-stamp" aria-live="polite">
+            <strong id="mapStampTitle">周囲平均との差（半径500m）</strong>
+            <span id="mapStampStatus">地図を読み込み中</span>
+          </div>
+          <div class="map-zoom-controls" aria-label="地図操作">
+            <button id="zoomInButton" type="button" aria-label="拡大" title="拡大">＋</button>
+            <div class="zoom-track" aria-hidden="true"><div id="zoomThumb" class="zoom-thumb"></div></div>
+            <button id="zoomOutButton" type="button" aria-label="縮小" title="縮小">−</button>
+            <button id="fitButton" type="button" aria-label="最初の範囲へ戻す" title="最初の範囲へ戻す">初</button>
+          </div>
+          <div class="legend" aria-label="周囲との差の凡例">
+            <strong>周囲より低い</strong>
+            <span><i class="legend-color c1"></i>0.5–2 m</span>
+            <span><i class="legend-color c2"></i>2–5 m</span>
+            <span><i class="legend-color c3"></i>5–10 m</span>
+            <span><i class="legend-color c4"></i>10 m以上</span>
+            <small>危険度ではありません</small>
+          </div>
+          <div id="loadingPanel" class="loading-panel" role="status" aria-live="polite" hidden></div>
+          <div id="tooltip" class="tooltip" hidden></div>
+          <div class="mobile-map-hint">1本指で移動・2本指で拡大縮小</div>
+          <a
+            class="gsi-attribution"
+            href="https://maps.gsi.go.jp/development/ichiran.html"
+            target="_blank"
+            rel="noopener noreferrer"
+          >地理院タイル</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="page-footer">
+      <p>出典: <a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener noreferrer">国土地理院「地理院タイル」</a>（標準地図・淡色地図・陰影起伏図・標高タイル）。標高タイルを加工して作成。</p>
+      <p>標高データの欠測、水部、構造物、測量時期、解像度、計算方法により、実際の排水や浸水状況とは異なります。本ツールは国土地理院・気象庁の公式サービスではありません。</p>
+    </footer>
+
+    <noscript>このツールの利用にはJavaScriptが必要です。</noscript>
+    <script type="module" src="./app.js?v=20260904-1"></script>
+  </body>
+</html>

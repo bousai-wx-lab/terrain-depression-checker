@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "tool_slug": "terrain-depression-checker",
+  "allowed_files": [
+    ".github/workflows/privacy-gate.yml",
+    ".gitignore",
+    "README.md",
+    "SECURITY.md",
+    "app.js",
+    "index.html",
+    "release-allowlist.json",
+    "release-manifest.json",
+    "scripts/build_release_manifest.py",
+    "scripts/privacy_gate.py",
+    "scripts/test_privacy_gate.py",
+    "styles.css",
+    "terrain.js",
+    "tests/terrain.test.mjs"
+  ],
+  "allowed_external_hosts": [
+    "127.0.0.1",
+    "cyberjapandata.gsi.go.jp",
+    "disaportal.gsi.go.jp",
+    "localhost",
+    "maps.gsi.go.jp"
+  ],
+  "allowed_git_identities": [
+    {
+      "name": "github-actions[bot]",
+      "email": "41898282+github-actions[bot]@users.noreply.github.com"
+    }
+  ],
+  "allowed_remote_urls": [],
+  "max_file_bytes": 500000,
+  "required_checkout_sha": "11d5960a326750d5838078e36cf38b85af677262"
+}
+

@@ -1,0 +1,28 @@
+name: Privacy gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions: {}
+
+jobs:
+  verify-public-surface:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the complete repository without retained credentials
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify release inventory, privacy, browser safety, and Git history
+        run: python3 scripts/privacy_gate.py
+      - name: Verify privacy scanner regressions
+        run: python3 scripts/test_privacy_gate.py
+      - name: Verify terrain calculations
+        run: node tests/terrain.test.mjs
