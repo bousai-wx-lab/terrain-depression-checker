@@ -1,11 +1,14 @@
 import assert from "node:assert/strict";
 import {
+  MAX_MAP_ZOOM,
+  TILE_MAX_ZOOM,
   calculateRelativeDepth,
   decodeElevationRgb,
   depthColor,
   lonLatToWorldPixel,
   metersPerPixel,
   tileCoordinate,
+  tileSourceZoom,
   worldPixelToLonLat,
 } from "../terrain.js";
 
@@ -36,4 +39,13 @@ assert.ok(metersPerPixel(35.681, 14) > 7);
 assert.ok(metersPerPixel(35.681, 14) < 9);
 assert.deepEqual(tileCoordinate(513.9), { tile: 2, pixel: 1 });
 
-process.stdout.write("TERRAIN_ALGORITHM_TESTS_OK cases=20\n");
+assert.equal(MAX_MAP_ZOOM, 18);
+assert.equal(TILE_MAX_ZOOM.std, 18);
+assert.equal(TILE_MAX_ZOOM.pale, 18);
+assert.equal(tileSourceZoom("std", 18), 18);
+assert.equal(tileSourceZoom("pale", 22), 18);
+assert.equal(tileSourceZoom("relief", 18), 15);
+assert.equal(tileSourceZoom("hillshademap", 18), 16);
+assert.throws(() => tileSourceZoom("unknown", 18), RangeError);
+
+process.stdout.write("TERRAIN_ALGORITHM_TESTS_OK cases=28\n");

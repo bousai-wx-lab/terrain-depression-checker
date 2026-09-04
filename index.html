@@ -14,7 +14,7 @@
     />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23176b53'/%3E%3Cpath d='M16 24h32L32 45z' fill='white'/%3E%3C/svg%3E" />
     <title>周囲より低い地形チェッカー | Bousai Wx Lab</title>
-    <link rel="stylesheet" href="./styles.css?v=20260904-1" />
+    <link rel="stylesheet" href="./styles.css?v=20260904-2" />
   </head>
   <body>
     <header class="topbar">
@@ -23,7 +23,21 @@
           <h1>周囲より低い地形チェッカー</h1>
           <p>標高から、周りより低い場所を見つけやすく</p>
         </div>
-        <span class="brand" aria-label="Bousai Wx Lab">Bousai Wx Lab</span>
+        <nav class="header-actions" aria-label="Bousai Wx Labの関連リンク">
+          <a class="header-link" href="https://bousai-wx-lab.com/" aria-label="気象予報士パパの防災ラボ ホーム" title="ブログのホームへ">
+            <svg class="header-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3.5 10.7 12 3.8l8.5 6.9v9.1h-6v-5.6h-5v5.6h-6z" />
+            </svg>
+            <span>ブログ</span>
+          </a>
+          <a class="header-link" href="https://x.com/bousai_wx_lab" target="_blank" rel="noopener noreferrer" aria-label="Bousai Wx LabのX" title="Xを開く">
+            <svg class="header-icon x-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <rect width="24" height="24" rx="4" />
+              <path d="m7 6 10 12m0-12L7 18" />
+            </svg>
+            <span>X</span>
+          </a>
+        </nav>
       </div>
     </header>
 
@@ -61,8 +75,26 @@
               <option value="hillshademap">陰影起伏図</option>
             </select>
           </label>
+          <label class="check-label">
+            <input id="terrainToggle" type="checkbox" checked />
+            <span>地形</span>
+          </label>
+          <label>
+            <span>地形表示</span>
+            <select id="terrainStyleSelect">
+              <option value="color">カラー</option>
+              <option value="mono">白黒</option>
+            </select>
+          </label>
           <label class="range-label">
-            <span>色の濃さ</span>
+            <span>地形の濃さ</span>
+            <span class="range-line">
+              <input id="terrainOpacityRange" type="range" min="0" max="100" step="5" value="35" />
+              <output id="terrainOpacityValue" for="terrainOpacityRange">35%</output>
+            </span>
+          </label>
+          <label class="range-label">
+            <span>窪地色の濃さ</span>
             <span class="range-line">
               <input id="opacityRange" type="range" min="20" max="90" step="5" value="65" />
               <output id="opacityValue" for="opacityRange">65%</output>
@@ -88,7 +120,7 @@
 
         <details class="privacy-note">
           <summary>プライバシーと通信</summary>
-          <p>位置情報、住所、Cookie、ブラウザ保存領域、アクセス解析は使いません。表示範囲の地図・標高タイルだけを国土地理院から取得します。</p>
+          <p>位置情報、住所、Cookie、ブラウザ保存領域、アクセス解析は使いません。表示範囲の地図・標高タイルだけを国土地理院から取得します。ブログとXには、上部リンクを押した時だけ移動します。</p>
         </details>
       </aside>
 
@@ -127,11 +159,11 @@
     </main>
 
     <footer class="page-footer">
-      <p>出典: <a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener noreferrer">国土地理院「地理院タイル」</a>（標準地図・淡色地図・陰影起伏図・標高タイル）。標高タイルを加工して作成。</p>
+      <p>出典: <a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener noreferrer">国土地理院「地理院タイル」</a>（標準地図・淡色地図・陰影起伏図・色別標高図・標高タイル）。標高タイルを加工して作成。色別標高図の海域部は海上保安庁海洋情報部の資料を使用して作成。</p>
       <p>標高データの欠測、水部、構造物、測量時期、解像度、計算方法により、実際の排水や浸水状況とは異なります。本ツールは国土地理院・気象庁の公式サービスではありません。</p>
     </footer>
 
     <noscript>このツールの利用にはJavaScriptが必要です。</noscript>
-    <script type="module" src="./app.js?v=20260904-1"></script>
+    <script type="module" src="./app.js?v=20260904-2"></script>
   </body>
 </html>

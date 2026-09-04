@@ -1,6 +1,19 @@
 export const EARTH_CIRCUMFERENCE_METERS = 40075016.68557849;
 export const TILE_SIZE = 256;
 export const DEM_ZOOM = 14;
+export const MAX_MAP_ZOOM = 18;
+export const TILE_MAX_ZOOM = Object.freeze({
+  std: 18,
+  pale: 18,
+  relief: 15,
+  hillshademap: 16,
+});
+
+export function tileSourceZoom(layer, requestedZoom) {
+  if (!Object.hasOwn(TILE_MAX_ZOOM, layer)) throw new RangeError(`Unknown tile layer: ${layer}`);
+  const zoom = Math.max(0, Math.round(Number(requestedZoom)));
+  return Math.min(TILE_MAX_ZOOM[layer], zoom);
+}
 
 export function clampLatitude(latitude) {
   return Math.max(-85.05112878, Math.min(85.05112878, Number(latitude)));

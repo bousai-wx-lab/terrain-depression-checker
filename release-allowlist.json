@@ -20,11 +20,13 @@
   ],
   "allowed_external_hosts": [
     "127.0.0.1",
+    "bousai-wx-lab.com",
     "cyberjapandata.gsi.go.jp",
     "disaportal.gsi.go.jp",
     "github.com",
     "localhost",
-    "maps.gsi.go.jp"
+    "maps.gsi.go.jp",
+    "x.com"
   ],
   "allowed_git_identities": [
     {

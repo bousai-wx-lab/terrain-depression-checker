@@ -1,5 +1,6 @@
 import {
   DEM_ZOOM,
+  MAX_MAP_ZOOM,
   TILE_SIZE,
   calculateRelativeDepth,
   decodeElevationRgb,
@@ -7,6 +8,7 @@ import {
   lonLatToWorldPixel,
   metersPerPixel,
   tileCoordinate,
+  tileSourceZoom,
   worldPixelToLonLat,
 } from "./terrain.js";
 
@@ -14,7 +16,7 @@ const GSI_ORIGIN = "https://cyberjapandata.gsi.go.jp";
 const DEM_SOURCES = ["dem5a_png", "dem5b_png", "dem5c_png", "dem_png"];
 const INITIAL_VIEW = Object.freeze({ longitude: 139.767, latitude: 35.681, zoom: 14 });
 const MIN_ZOOM = 5;
-const MAX_ZOOM = 15;
+const MAX_ZOOM = MAX_MAP_ZOOM;
 const MIN_ANALYSIS_ZOOM = 14;
 const MAX_DEM_TILES = 72;
 const MAP_TILE_CACHE_LIMIT = 120;
@@ -28,6 +30,10 @@ const elements = {
   threshold: document.querySelector("#thresholdSelect"),
   analyze: document.querySelector("#analyzeButton"),
   baseMap: document.querySelector("#baseMapSelect"),
+  terrainToggle: document.querySelector("#terrainToggle"),
+  terrainStyle: document.querySelector("#terrainStyleSelect"),
+  terrainOpacity: document.querySelector("#terrainOpacityRange"),
+  terrainOpacityValue: document.querySelector("#terrainOpacityValue"),
   opacity: document.querySelector("#opacityRange"),
   opacityValue: document.querySelector("#opacityValue"),
   zoomIn: document.querySelector("#zoomInButton"),
@@ -180,34 +186,49 @@ function getMapTile(layer, zoom, x, y) {
   return entry;
 }
 
-function drawBaseMap() {
+function drawTileLayer(layer, opacity = 1) {
   const scale = state.deviceScale;
   const width = elements.canvas.width;
   const height = elements.canvas.height;
   const cssWidth = width / scale;
   const cssHeight = height / scale;
   const center = currentCenterWorld();
-  const xMin = Math.floor((center.x - cssWidth / 2) / TILE_SIZE);
-  const xMax = Math.floor((center.x + cssWidth / 2) / TILE_SIZE);
-  const yMin = Math.floor((center.y - cssHeight / 2) / TILE_SIZE);
-  const yMax = Math.floor((center.y + cssHeight / 2) / TILE_SIZE);
-  const tileCount = 2 ** state.zoom;
+  const sourceZoom = tileSourceZoom(layer, state.zoom);
+  const tileViewSize = TILE_SIZE * (2 ** (state.zoom - sourceZoom));
+  const xMin = Math.floor((center.x - cssWidth / 2) / tileViewSize);
+  const xMax = Math.floor((center.x + cssWidth / 2) / tileViewSize);
+  const yMin = Math.floor((center.y - cssHeight / 2) / tileViewSize);
+  const yMax = Math.floor((center.y + cssHeight / 2) / tileViewSize);
+  const tileCount = 2 ** sourceZoom;
 
-  context.fillStyle = "#dce8ee";
-  context.fillRect(0, 0, width, height);
+  context.save();
+  context.globalAlpha = opacity;
   context.imageSmoothingEnabled = true;
 
   for (let tileX = xMin; tileX <= xMax; tileX += 1) {
     const wrappedX = ((tileX % tileCount) + tileCount) % tileCount;
     for (let tileY = yMin; tileY <= yMax; tileY += 1) {
       if (tileY < 0 || tileY >= tileCount) continue;
-      const entry = getMapTile(elements.baseMap.value, state.zoom, wrappedX, tileY);
+      const entry = getMapTile(layer, sourceZoom, wrappedX, tileY);
       if (entry.status !== "loaded") continue;
-      const left = (tileX * TILE_SIZE - center.x + cssWidth / 2) * scale;
-      const top = (tileY * TILE_SIZE - center.y + cssHeight / 2) * scale;
-      context.drawImage(entry.image, left, top, TILE_SIZE * scale + 1, TILE_SIZE * scale + 1);
+      const left = (tileX * tileViewSize - center.x + cssWidth / 2) * scale;
+      const top = (tileY * tileViewSize - center.y + cssHeight / 2) * scale;
+      context.drawImage(entry.image, left, top, tileViewSize * scale + 1, tileViewSize * scale + 1);
     }
   }
+  context.restore();
+}
+
+function drawBaseMap() {
+  context.fillStyle = "#dce8ee";
+  context.fillRect(0, 0, elements.canvas.width, elements.canvas.height);
+  drawTileLayer(elements.baseMap.value);
+}
+
+function drawTerrainLayer() {
+  if (!elements.terrainToggle.checked) return;
+  const layer = elements.terrainStyle.value === "mono" ? "hillshademap" : "relief";
+  drawTileLayer(layer, Number(elements.terrainOpacity.value) / 100);
 }
 
 function analysisSignature() {
@@ -235,6 +256,7 @@ function draw() {
   state.drawPending = false;
   resizeCanvas();
   drawBaseMap();
+  drawTerrainLayer();
   drawAnalysis();
 }
 
@@ -699,6 +721,17 @@ elements.analyze.addEventListener("click", () => void analyzeVisibleArea());
 elements.radius.addEventListener("change", () => invalidateAnalysis("判定半径を変更しました"));
 elements.threshold.addEventListener("change", () => invalidateAnalysis("表示下限を変更しました"));
 elements.baseMap.addEventListener("change", scheduleDraw);
+elements.terrainToggle.addEventListener("change", () => {
+  const disabled = !elements.terrainToggle.checked;
+  elements.terrainStyle.disabled = disabled;
+  elements.terrainOpacity.disabled = disabled;
+  scheduleDraw();
+});
+elements.terrainStyle.addEventListener("change", scheduleDraw);
+elements.terrainOpacity.addEventListener("input", () => {
+  elements.terrainOpacityValue.value = `${elements.terrainOpacity.value}%`;
+  scheduleDraw();
+});
 elements.opacity.addEventListener("input", () => {
   elements.opacityValue.value = `${elements.opacity.value}%`;
   scheduleDraw();
@@ -712,6 +745,7 @@ resizeObserver.observe(elements.canvasWrap);
 
 updateZoomControl();
 elements.opacityValue.value = `${elements.opacity.value}%`;
+elements.terrainOpacityValue.value = `${elements.terrainOpacity.value}%`;
 updateStamp("標高を解析します");
 resizeCanvas();
 scheduleDraw();

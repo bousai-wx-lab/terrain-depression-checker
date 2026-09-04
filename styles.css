@@ -84,8 +84,19 @@ h1 {
   font-size: 13px;
 }
 
-.brand {
+.header-actions {
+  display: flex;
   flex: 0 0 auto;
+  align-items: center;
+  gap: 7px;
+}
+
+.header-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
   padding: 5px 10px;
   border: 1px solid #7fa697;
   border-radius: 999px;
@@ -93,6 +104,53 @@ h1 {
   color: var(--accent-dark);
   font-size: 13px;
   font-weight: 800;
+  text-decoration: none;
+}
+
+.header-link:hover {
+  border-color: var(--accent-dark);
+  background: #deefe8;
+  color: var(--accent-dark);
+}
+
+.header-icon {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.x-icon {
+  fill: #111;
+  stroke: none;
+}
+
+.x-icon path {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1.7;
+}
+
+.check-label {
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: center;
+  min-height: 40px;
+}
+
+.check-label input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+select:disabled,
+input:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
 }
 
 .app {
@@ -507,7 +565,7 @@ dd {
     font-size: 20px;
   }
 
-  .brand {
+  .header-link {
     margin-top: 1px;
     padding: 4px 8px;
     font-size: 11px;
@@ -569,9 +627,24 @@ dd {
     font-size: 18px;
   }
 
-  .brand {
-    padding: 4px 7px;
-    font-size: 10px;
+  .header-actions {
+    gap: 5px;
+  }
+
+  .header-link {
+    width: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    padding: 0;
+  }
+
+  .header-link span {
+    position: absolute;
+    overflow: hidden;
+    width: 1px;
+    height: 1px;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 
   .controls {

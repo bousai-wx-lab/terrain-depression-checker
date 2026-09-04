@@ -19,10 +19,10 @@
       "sha256": "ca656e33f8e358eed2ba12861f00e15782359055c2d92b10a2bf019edf8af953"
     },
     {
-      "bytes": 2439,
+      "bytes": 3219,
       "mime_type": "text/markdown",
       "path": "README.md",
-      "sha256": "3980b6707d0c3346b2839ae67fe97951a6e1fd5e24a98f7663dd7d75f9d3d853"
+      "sha256": "9699e7a7e07016c52ae99dd759046c4380e3a701864438ce78ddcce8c3f89929"
     },
     {
       "bytes": 519,
@@ -31,22 +31,22 @@
       "sha256": "a4ae3ce388dc20a24be80d0d80cf1958302494f37d85f42c9b7524f5d3a4286f"
     },
     {
-      "bytes": 25604,
+      "bytes": 27005,
       "mime_type": "text/javascript",
       "path": "app.js",
-      "sha256": "d6d384ac4b86fd707aa8295a363ed17fc2630cbcb6cfdeb2151a4cf48867c526"
+      "sha256": "ae6a0ec21c3726743651ff929d8be8220a879b96ab24465b53a78da706dc3358"
     },
     {
-      "bytes": 7049,
+      "bytes": 8796,
       "mime_type": "text/html",
       "path": "index.html",
-      "sha256": "7ea4a8ff97a2c29e71efb721cb1c9a0945cfa7d512889de35fff82e6ecd86661"
+      "sha256": "44a5aab354f731148affe9dfa86529d373ed2ae3ce54767a154f8b6ea6ab8a7d"
     },
     {
-      "bytes": 1065,
+      "bytes": 1103,
       "mime_type": "application/json",
       "path": "release-allowlist.json",
-      "sha256": "324438f19748ca7ca13e810633d17e6cea8ba91ed44acfd67ecfe409ca34cb25"
+      "sha256": "ac48587491caa1e9e846a0108e40f9ac012170e98a9f31cb904215cb9868da63"
     },
     {
       "bytes": 1814,
@@ -67,25 +67,25 @@
       "sha256": "19d73dbe58f48bd3dc649b26c0fd0f0a228eedb33c6220ec734fa033f6bfe5bc"
     },
     {
-      "bytes": 9900,
+      "bytes": 11016,
       "mime_type": "text/css",
       "path": "styles.css",
-      "sha256": "97468bf6cfa50a91f12fae19ff637c940b2b4e196b35171b21701e11170c4d3e"
+      "sha256": "f79b8ad8ddaeeee2c95045c262feacb05edcd425ecf0d6a5a615f7a420d21bc7"
     },
     {
-      "bytes": 2200,
+      "bytes": 2604,
       "mime_type": "text/javascript",
       "path": "terrain.js",
-      "sha256": "0480f030a830e24aee7a5a3529ae3487d4e1a0f34795000fa4a6d82d856a497a"
+      "sha256": "95cee2a1549e474aa7f2ca781cdf0c19de81ee2e215eaa9620aaff25fd01aa93"
     },
     {
-      "bytes": 1449,
+      "bytes": 1865,
       "mime_type": "text/javascript",
       "path": "tests/terrain.test.mjs",
-      "sha256": "a7f8d479e576fe812d2179d73ed28249c9b95068fed4de775e2dfb27df9f95d5"
+      "sha256": "6e56fad44423ec218792dfab92c4beb57bfc0946ca3dc0ccb29699af7c08eef3"
     }
   ],
-  "generated_at_utc": "2026-09-04T09:53:20+00:00",
+  "generated_at_utc": "2026-09-04T10:36:02+00:00",
   "schema_version": 1,
   "tool_slug": "terrain-depression-checker"
 }
