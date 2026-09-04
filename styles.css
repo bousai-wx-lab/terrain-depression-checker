@@ -508,6 +508,32 @@ dd {
   pointer-events: none;
 }
 
+.map-scale {
+  position: absolute;
+  bottom: 8px;
+  left: 12px;
+  z-index: 5;
+  display: grid;
+  justify-items: start;
+  padding: 3px 6px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.88);
+  color: #17212b;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.15;
+  pointer-events: none;
+}
+
+.map-scale i {
+  display: block;
+  height: 7px;
+  margin-top: 1px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  border-left: 2px solid currentColor;
+}
+
 .mobile-map-hint {
   display: none;
   position: absolute;
@@ -693,7 +719,7 @@ dd {
 
   .mobile-map-hint {
     right: auto;
-    bottom: 28px;
+    bottom: 52px;
     left: 8px;
     max-width: calc(100% - 150px);
     transform: none;

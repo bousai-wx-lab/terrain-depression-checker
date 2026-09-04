@@ -2,11 +2,14 @@ import {
   DEM_ZOOM,
   MAX_MAP_ZOOM,
   TILE_SIZE,
+  analysisSourceZoom,
   calculateRelativeDepth,
   decodeElevationRgb,
   depthColor,
   lonLatToWorldPixel,
   metersPerPixel,
+  minimumRingSamples,
+  scaleBarSpec,
   tileCoordinate,
   tileSourceZoom,
   worldPixelToLonLat,
@@ -17,7 +20,6 @@ const DEM_SOURCES = ["dem5a_png", "dem5b_png", "dem5c_png", "dem_png"];
 const INITIAL_VIEW = Object.freeze({ longitude: 139.767, latitude: 35.681, zoom: 14 });
 const MIN_ZOOM = 5;
 const MAX_ZOOM = MAX_MAP_ZOOM;
-const MIN_ANALYSIS_ZOOM = 14;
 const MAX_DEM_TILES = 72;
 const MAP_TILE_CACHE_LIMIT = 120;
 const DEM_TILE_CACHE_LIMIT = 80;
@@ -48,6 +50,9 @@ const elements = {
   surrounding: document.querySelector("#surroundingValue"),
   depth: document.querySelector("#depthValue"),
   coordinate: document.querySelector("#coordinateValue"),
+  scale: document.querySelector("#mapScale"),
+  scaleLabel: document.querySelector("#mapScaleLabel"),
+  scaleLine: document.querySelector("#mapScaleLine"),
 };
 
 const context = elements.canvas.getContext("2d", { alpha: false });
@@ -110,6 +115,13 @@ function updateZoomControl() {
   elements.zoomThumb.style.setProperty("--thumb-top", `${62 - ratio * 48}px`);
   elements.zoomIn.disabled = state.zoom >= MAX_ZOOM;
   elements.zoomOut.disabled = state.zoom <= MIN_ZOOM;
+}
+
+function updateScaleBar() {
+  const spec = scaleBarSpec(state.latitude, state.zoom, canvasCssSize().width <= 520 ? 90 : 120);
+  elements.scaleLabel.textContent = spec.label;
+  elements.scaleLine.style.width = `${Math.round(spec.pixels)}px`;
+  elements.scale.setAttribute("aria-label", `縮尺 ${spec.label}`);
 }
 
 function setZoom(nextZoom, anchorX, anchorY) {
@@ -258,6 +270,7 @@ function draw() {
   drawBaseMap();
   drawTerrainLayer();
   drawAnalysis();
+  updateScaleBar();
 }
 
 function scheduleDraw() {
@@ -277,7 +290,9 @@ function hideLoading() {
 }
 
 function radiusLabel() {
-  return Number(elements.radius.value) === 1000 ? "1km" : `${elements.radius.value}m`;
+  const meters = Number(elements.radius.value);
+  if (meters >= 1000) return `${Number((meters / 1000).toPrecision(3))}km`;
+  return `${meters}m`;
 }
 
 function updateStamp(message) {
@@ -287,7 +302,6 @@ function updateStamp(message) {
 
 function scheduleAnalysis() {
   window.clearTimeout(state.analyzeTimer);
-  if (state.zoom < MIN_ANALYSIS_ZOOM) return;
   state.analyzeTimer = window.setTimeout(() => {
     void analyzeVisibleArea();
   }, 420);
@@ -297,9 +311,9 @@ function invalidateAnalysis(message) {
   state.analysisSequence += 1;
   state.analysis = null;
   clearPointReadout();
-  updateStamp(state.zoom < MIN_ANALYSIS_ZOOM ? "ズーム14以上まで拡大すると解析します" : message);
+  updateStamp(message);
   hideLoading();
-  elements.analyze.disabled = state.zoom < MIN_ANALYSIS_ZOOM;
+  elements.analyze.disabled = false;
   scheduleDraw();
   scheduleAnalysis();
 }
@@ -321,8 +335,12 @@ async function imageFromBlob(blob) {
   }
 }
 
-async function fetchDemSource(source, tileX, tileY) {
-  const url = `${GSI_ORIGIN}/xyz/${source}/${DEM_ZOOM}/${tileX}/${tileY}.png`;
+function demSourcesForZoom(zoom) {
+  return zoom <= 12 ? ["dem_png"] : DEM_SOURCES;
+}
+
+async function fetchDemSource(source, zoom, tileX, tileY) {
+  const url = `${GSI_ORIGIN}/xyz/${source}/${zoom}/${tileX}/${tileY}.png`;
   const response = await fetch(url, {
     method: "GET",
     mode: "cors",
@@ -343,8 +361,8 @@ async function fetchDemSource(source, tileX, tileY) {
   return tileContext.getImageData(0, 0, TILE_SIZE, TILE_SIZE).data;
 }
 
-async function loadDemTile(tileX, tileY) {
-  const key = `${DEM_ZOOM}/${tileX}/${tileY}`;
+async function loadDemTile(zoom, tileX, tileY) {
+  const key = `${zoom}/${tileX}/${tileY}`;
   if (state.demTiles.has(key)) return state.demTiles.get(key);
 
   const promise = (async () => {
@@ -354,10 +372,11 @@ async function loadDemTile(tileX, tileY) {
     const usedSources = new Set();
     let validCount = 0;
 
-    for (let sourceIndex = 0; sourceIndex < DEM_SOURCES.length; sourceIndex += 1) {
+    const demSources = demSourcesForZoom(zoom);
+    for (let sourceIndex = 0; sourceIndex < demSources.length; sourceIndex += 1) {
       let pixels = null;
       try {
-        pixels = await fetchDemSource(DEM_SOURCES[sourceIndex], tileX, tileY);
+        pixels = await fetchDemSource(demSources[sourceIndex], zoom, tileX, tileY);
       } catch {
         pixels = null;
       }
@@ -369,7 +388,7 @@ async function loadDemTile(tileX, tileY) {
         if (elevation === null) continue;
         elevations[index] = elevation;
         sources[index] = sourceIndex + 1;
-        usedSources.add(DEM_SOURCES[sourceIndex]);
+        usedSources.add(demSources[sourceIndex]);
         validCount += 1;
       }
       if (validCount === elevations.length) break;
@@ -403,10 +422,10 @@ async function runPool(tasks, concurrency, onProgress) {
   await Promise.all(Array.from({ length: Math.min(concurrency, tasks.length) }, worker));
 }
 
-function demTileAt(tileMap, worldX, worldY) {
+function demTileAt(tileMap, zoom, worldX, worldY) {
   const xCoordinate = tileCoordinate(worldX);
   const yCoordinate = tileCoordinate(worldY);
-  const key = `${DEM_ZOOM}/${xCoordinate.tile}/${yCoordinate.tile}`;
+  const key = `${zoom}/${xCoordinate.tile}/${yCoordinate.tile}`;
   const tile = tileMap.get(key);
   if (!tile) return Number.NaN;
   return tile.elevations[yCoordinate.pixel * TILE_SIZE + xCoordinate.pixel];
@@ -445,21 +464,11 @@ function buildOverlay(result, width, height) {
   result.height = height;
 }
 
-async function analyzeVisibleArea() {
-  if (state.zoom < MIN_ANALYSIS_ZOOM) {
-    invalidateAnalysis("ズーム14以上まで拡大すると解析します");
-    return;
-  }
-
-  const sequence = state.analysisSequence + 1;
-  state.analysisSequence = sequence;
-  const signature = analysisSignature();
-  const { width, height } = canvasCssSize();
-  const radiusMeters = Number(elements.radius.value);
-  const centerDem = currentCenterWorld(DEM_ZOOM);
-  const demPerCssPixel = 2 ** (DEM_ZOOM - state.zoom);
-  const radiusPixels = radiusMeters / metersPerPixel(state.latitude, DEM_ZOOM);
-  const buffer = radiusPixels * 1.08;
+function makeAnalysisPlan(zoom, width, height, radiusMeters) {
+  const centerDem = currentCenterWorld(zoom);
+  const demPerCssPixel = 2 ** (zoom - state.zoom);
+  const radiusPixels = radiusMeters / metersPerPixel(state.latitude, zoom);
+  const buffer = Math.max(1, radiusPixels * 1.08);
   const left = centerDem.x - width / 2 * demPerCssPixel - buffer;
   const right = centerDem.x + width / 2 * demPerCssPixel + buffer;
   const top = centerDem.y - height / 2 * demPerCssPixel - buffer;
@@ -471,12 +480,40 @@ async function analyzeVisibleArea() {
   const tileKeys = [];
   for (let tileX = xMin; tileX <= xMax; tileX += 1) {
     for (let tileY = yMin; tileY <= yMax; tileY += 1) {
-      tileKeys.push({ tileX, tileY, key: `${DEM_ZOOM}/${tileX}/${tileY}` });
+      tileKeys.push({ tileX, tileY, key: `${zoom}/${tileX}/${tileY}` });
     }
   }
+  return { zoom, centerDem, demPerCssPixel, radiusPixels, tileKeys };
+}
+
+function chooseAnalysisPlan(width, height, radiusMeters) {
+  const highestZoom = analysisSourceZoom(state.zoom);
+  for (let zoom = highestZoom; zoom >= MIN_ZOOM; zoom -= 1) {
+    const plan = makeAnalysisPlan(zoom, width, height, radiusMeters);
+    if (plan.tileKeys.length <= MAX_DEM_TILES) return plan;
+  }
+  return makeAnalysisPlan(MIN_ZOOM, width, height, radiusMeters);
+}
+
+function resolutionLabel(meters) {
+  if (meters >= 1000) return `約${Number((meters / 1000).toPrecision(2))}km/画素`;
+  if (meters >= 10) return `約${Math.round(meters)}m/画素`;
+  return `約${meters.toFixed(1)}m/画素`;
+}
+
+async function analyzeVisibleArea() {
+  const sequence = state.analysisSequence + 1;
+  state.analysisSequence = sequence;
+  const signature = analysisSignature();
+  const { width, height } = canvasCssSize();
+  const radiusMeters = Number(elements.radius.value);
+  const requiredSampleCount = minimumRingSamples(radiusMeters);
+  const plan = chooseAnalysisPlan(width, height, radiusMeters);
+  const { centerDem, demPerCssPixel, radiusPixels, tileKeys } = plan;
+  const sourceResolution = metersPerPixel(state.latitude, plan.zoom);
 
   if (tileKeys.length > MAX_DEM_TILES) {
-    updateStamp("解析範囲が広すぎます。もう少し拡大してください");
+    updateStamp("この表示範囲は解析できません。少し拡大してください");
     showLoading("解析範囲が広すぎます");
     elements.analyze.disabled = false;
     return;
@@ -484,11 +521,11 @@ async function analyzeVisibleArea() {
 
   elements.analyze.disabled = true;
   showLoading(`標高タイルを取得中 0/${tileKeys.length}`);
-  updateStamp("国土地理院の標高タイルを取得中");
+  updateStamp(`国土地理院の標高タイルを取得中・${resolutionLabel(sourceResolution)}`);
 
   const loadedTiles = new Map();
   const tasks = tileKeys.map(({ tileX, tileY, key }) => async () => {
-    const tile = await loadDemTile(tileX, tileY);
+    const tile = await loadDemTile(plan.zoom, tileX, tileY);
     loadedTiles.set(key, tile);
   });
   try {
@@ -507,7 +544,11 @@ async function analyzeVisibleArea() {
   showLoading("周囲との標高差を計算中");
   await new Promise((resolve) => window.requestAnimationFrame(resolve));
 
-  const step = width <= 520 ? 5 : 6;
+  const baseStep = width <= 520 ? 5 : 6;
+  const step = Math.min(
+    Math.max(width, height),
+    Math.max(baseStep, Math.ceil(1 / demPerCssPixel)),
+  );
   const columns = Math.ceil(width / step);
   const rows = Math.ceil(height / step);
   const depths = new Float32Array(columns * rows);
@@ -530,13 +571,14 @@ async function analyzeVisibleArea() {
     for (let column = 0; column < columns; column += 1) {
       const cssX = Math.min(width - 1, column * step + step / 2);
       const worldX = centerDem.x + (cssX - width / 2) * demPerCssPixel;
-      const centerElevation = demTileAt(loadedTiles, worldX, worldY);
+      const centerElevation = demTileAt(loadedTiles, plan.zoom, worldX, worldY);
       const surrounding = angles.map((angle) => demTileAt(
         loadedTiles,
+        plan.zoom,
         worldX + Math.cos(angle) * radiusPixels,
         worldY + Math.sin(angle) * radiusPixels,
       ));
-      const value = calculateRelativeDepth(centerElevation, surrounding, 10);
+      const value = calculateRelativeDepth(centerElevation, surrounding, requiredSampleCount);
       if (!value) continue;
       const index = row * columns + column;
       depths[index] = value.depth;
@@ -559,13 +601,21 @@ async function analyzeVisibleArea() {
     surroundings,
     validCount,
     sourceNames: [...sourceNames],
+    analysisZoom: plan.zoom,
+    sourceResolution,
+    radiusPixels,
+    requiredSampleCount,
   };
   buildOverlay(result, width, height);
   state.analysis = result;
   elements.analyze.disabled = false;
   hideLoading();
   const sourceLabel = result.sourceNames.length ? result.sourceNames.map((name) => name.replace("_png", "").toUpperCase()).join(" / ") : "標高データなし";
-  updateStamp(`${result.coloredCount.toLocaleString("ja-JP")}格子を着色・標高 ${sourceLabel}`);
+  const resolution = resolutionLabel(result.sourceResolution);
+  const resolutionNote = result.radiusPixels < 1
+    ? `・半径が${resolution}未満のため着色は限定的`
+    : "";
+  updateStamp(`${result.coloredCount.toLocaleString("ja-JP")}格子を着色・標高 ${sourceLabel}・解析${resolution}・有効${result.requiredSampleCount}方向以上${resolutionNote}`);
   scheduleDraw();
 }
 

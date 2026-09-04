@@ -9,6 +9,31 @@ export const TILE_MAX_ZOOM = Object.freeze({
   hillshademap: 16,
 });
 
+export function analysisSourceZoom(viewZoom) {
+  const zoom = Math.max(1, Math.round(Number(viewZoom)));
+  return Math.min(DEM_ZOOM, zoom);
+}
+
+export function scaleBarSpec(latitude, zoom, maxWidth = 120) {
+  const metersPerCssPixel = metersPerPixel(latitude, zoom);
+  const maximumDistance = metersPerCssPixel * Math.max(1, Number(maxWidth));
+  const magnitude = 10 ** Math.floor(Math.log10(maximumDistance));
+  const candidates = [5, 2, 1].map((value) => value * magnitude);
+  const meters = candidates.find((value) => value <= maximumDistance) ?? magnitude;
+  const pixels = meters / metersPerCssPixel;
+  const label = meters >= 1000
+    ? `${Number((meters / 1000).toPrecision(3))} km`
+    : `${Number(meters.toPrecision(3))} m`;
+  return { meters, pixels, label };
+}
+
+export function minimumRingSamples(radiusMeters) {
+  const radius = Number(radiusMeters);
+  if (radius >= 50000) return 4;
+  if (radius >= 10000) return 6;
+  return 10;
+}
+
 export function tileSourceZoom(layer, requestedZoom) {
   if (!Object.hasOwn(TILE_MAX_ZOOM, layer)) throw new RangeError(`Unknown tile layer: ${layer}`);
   const zoom = Math.max(0, Math.round(Number(requestedZoom)));

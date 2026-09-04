@@ -2,11 +2,14 @@ import assert from "node:assert/strict";
 import {
   MAX_MAP_ZOOM,
   TILE_MAX_ZOOM,
+  analysisSourceZoom,
   calculateRelativeDepth,
   decodeElevationRgb,
   depthColor,
   lonLatToWorldPixel,
   metersPerPixel,
+  minimumRingSamples,
+  scaleBarSpec,
   tileCoordinate,
   tileSourceZoom,
   worldPixelToLonLat,
@@ -48,4 +51,20 @@ assert.equal(tileSourceZoom("relief", 18), 15);
 assert.equal(tileSourceZoom("hillshademap", 18), 16);
 assert.throws(() => tileSourceZoom("unknown", 18), RangeError);
 
-process.stdout.write("TERRAIN_ALGORITHM_TESTS_OK cases=28\n");
+assert.equal(analysisSourceZoom(5), 5);
+assert.equal(analysisSourceZoom(12), 12);
+assert.equal(analysisSourceZoom(14), 14);
+assert.equal(analysisSourceZoom(18), 14);
+
+const scaleAtZoom14 = scaleBarSpec(35.681, 14, 120);
+assert.equal(scaleAtZoom14.label, "500 m");
+assert.ok(scaleAtZoom14.pixels >= 60 && scaleAtZoom14.pixels <= 120);
+const scaleAtZoom5 = scaleBarSpec(35.681, 5, 120);
+assert.equal(scaleAtZoom5.label, "200 km");
+assert.ok(scaleAtZoom5.pixels >= 40 && scaleAtZoom5.pixels <= 120);
+assert.equal(minimumRingSamples(500), 10);
+assert.equal(minimumRingSamples(10000), 6);
+assert.equal(minimumRingSamples(50000), 4);
+assert.equal(minimumRingSamples(300000), 4);
+
+process.stdout.write("TERRAIN_ALGORITHM_TESTS_OK cases=42\n");
