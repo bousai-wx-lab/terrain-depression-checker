@@ -30,7 +30,6 @@ const elements = {
   canvas: document.querySelector("#mapCanvas"),
   radius: document.querySelector("#radiusSelect"),
   threshold: document.querySelector("#thresholdSelect"),
-  analyze: document.querySelector("#analyzeButton"),
   baseMap: document.querySelector("#baseMapSelect"),
   baseMapOpacity: document.querySelector("#baseMapOpacityRange"),
   baseMapOpacityValue: document.querySelector("#baseMapOpacityValue"),
@@ -315,7 +314,6 @@ function invalidateAnalysis(message) {
   clearPointReadout();
   updateStamp(message);
   hideLoading();
-  elements.analyze.disabled = false;
   scheduleDraw();
   scheduleAnalysis();
 }
@@ -517,11 +515,9 @@ async function analyzeVisibleArea() {
   if (tileKeys.length > MAX_DEM_TILES) {
     updateStamp("この表示範囲は解析できません。少し拡大してください");
     showLoading("解析範囲が広すぎます");
-    elements.analyze.disabled = false;
     return;
   }
 
-  elements.analyze.disabled = true;
   showLoading(`標高タイルを取得中 0/${tileKeys.length}`);
   updateStamp(`国土地理院の標高タイルを取得中・${resolutionLabel(sourceResolution)}`);
 
@@ -536,7 +532,6 @@ async function analyzeVisibleArea() {
     });
   } catch {
     if (sequence !== state.analysisSequence) return;
-    elements.analyze.disabled = false;
     showLoading("標高データを取得できませんでした。通信状態を確認してください");
     updateStamp("標高データを取得できませんでした");
     return;
@@ -610,7 +605,6 @@ async function analyzeVisibleArea() {
   };
   buildOverlay(result, width, height);
   state.analysis = result;
-  elements.analyze.disabled = false;
   hideLoading();
   const sourceLabel = result.sourceNames.length ? result.sourceNames.map((name) => name.replace("_png", "").toUpperCase()).join(" / ") : "標高データなし";
   const resolution = resolutionLabel(result.sourceResolution);
@@ -768,7 +762,6 @@ elements.canvas.addEventListener("wheel", (event) => {
 elements.zoomIn.addEventListener("click", () => setZoom(state.zoom + 1));
 elements.zoomOut.addEventListener("click", () => setZoom(state.zoom - 1));
 elements.fit.addEventListener("click", resetView);
-elements.analyze.addEventListener("click", () => void analyzeVisibleArea());
 
 elements.radius.addEventListener("change", () => invalidateAnalysis("判定半径を変更しました"));
 elements.threshold.addEventListener("change", () => invalidateAnalysis("表示下限を変更しました"));
