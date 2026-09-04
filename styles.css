@@ -221,6 +221,57 @@ h1 {
   gap: 8px;
 }
 
+.header-share-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.header-share-actions button {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid rgb(197 230 246 / 48%);
+  border-radius: 6px;
+  background: rgb(255 255 255 / 9%);
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 9%);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.header-share-actions button:hover {
+  border-color: #bde9f5;
+  background: rgb(255 255 255 / 17%);
+}
+
+.header-share-actions button.is-success {
+  border-color: #8de0cc;
+  background: rgb(31 132 112 / 72%);
+}
+
+.header-share-actions button.is-error {
+  border-color: #ffb7aa;
+  background: rgb(157 52 45 / 78%);
+}
+
+.header-share-actions svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .sns-link {
   display: inline-flex;
   align-items: center;
@@ -670,66 +721,6 @@ dd {
 .legend-color.c3 { background: #4d3cb4; }
 .legend-color.c4 { background: #9d277d; }
 
-.map-share-actions {
-  position: absolute;
-  top: 166px;
-  right: 12px;
-  z-index: 6;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 5px;
-  width: 166px;
-}
-
-.map-share-actions button {
-  display: inline-flex;
-  min-width: 0;
-  min-height: 34px;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 5px 6px;
-  border: 1px solid rgb(59 91 116 / 70%);
-  border-radius: 5px;
-  background: rgb(255 255 255 / 95%);
-  color: #123a59;
-  box-shadow: 0 4px 12px rgb(13 45 69 / 18%);
-  font-size: 10px;
-  font-weight: 850;
-  line-height: 1;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.map-share-actions button:hover {
-  border-color: #0e759d;
-  background: #eef9fc;
-  color: #075c7f;
-}
-
-.map-share-actions button.is-success {
-  border-color: #2a7f78;
-  background: #e8f6f3;
-  color: #176761;
-}
-
-.map-share-actions button.is-error {
-  border-color: #b34c42;
-  background: #fff0ee;
-  color: #8a3127;
-}
-
-.map-share-actions svg {
-  width: 14px;
-  height: 14px;
-  flex: 0 0 auto;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
 .loading-panel {
   position: absolute;
   inset: auto 50% 42px auto;
@@ -882,6 +873,15 @@ dd {
     padding: 4px 8px 4px 6px;
   }
 
+  .header-share-actions {
+    gap: 5px;
+  }
+
+  .header-share-actions button {
+    padding: 5px 8px;
+    font-size: 10px;
+  }
+
   .app {
     grid-template-columns: 1fr;
     height: auto;
@@ -946,12 +946,14 @@ dd {
   }
 
   .header-identity {
+    flex: 1 1 auto;
     min-width: 0;
+    overflow: hidden;
     gap: 6px;
   }
 
   .brand-home {
-    min-height: 46px;
+    min-height: 42px;
     padding: 2px;
     border-radius: 6px;
   }
@@ -966,34 +968,38 @@ dd {
   }
 
   .brand-logo {
-    width: 42px;
-    height: 42px;
+    width: 38px;
+    height: 38px;
   }
 
   .title-row {
+    flex: 1 1 auto;
     gap: 0;
+    overflow: hidden;
     padding-left: 7px;
   }
 
-  .product-kicker {
-    font-size: 7px;
+  .product-kicker,
+  .tool-subtitle {
+    display: none;
+  }
+
+  .tool-title-line {
+    overflow: hidden;
   }
 
   h1 {
-    font-size: clamp(15px, 4.5vw, 18px);
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    font-size: 13px;
     line-height: 1.15;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .tool-chip {
     display: none;
-  }
-
-  .tool-subtitle {
-    overflow: hidden;
-    max-width: 226px;
-    font-size: 9px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   .sns-link {
@@ -1001,6 +1007,30 @@ dd {
     min-width: 38px;
     min-height: 38px;
     padding: 0;
+  }
+
+  .header-actions {
+    gap: 5px;
+  }
+
+  .header-share-actions {
+    gap: 4px;
+  }
+
+  .header-share-actions button {
+    width: 36px;
+    min-width: 36px;
+    min-height: 38px;
+    padding: 0;
+  }
+
+  .header-action-label {
+    position: absolute;
+    overflow: hidden;
+    width: 1px;
+    height: 1px;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 
   .sns-label {
@@ -1047,18 +1077,6 @@ dd {
     bottom: 28px;
     width: 128px;
     padding: 7px 8px;
-  }
-
-  .map-share-actions {
-    top: 86px;
-    right: 8px;
-    width: 152px;
-  }
-
-  .map-share-actions button {
-    gap: 3px;
-    padding-inline: 4px;
-    font-size: 9px;
   }
 
   .legend span {

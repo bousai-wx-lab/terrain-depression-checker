@@ -32,7 +32,7 @@
     <meta name="twitter:image:alt" content="周囲より低い地形チェッカーの機能と地図表示を紹介するBousai Wx Labのカード画像" />
     <link rel="icon" type="image/png" href="./assets/bousaiwxlab-site-icon.png" />
     <title>周囲より低い地形チェッカー | Bousai Wx Lab</title>
-    <link rel="stylesheet" href="./styles.css?v=20260904-7" />
+    <link rel="stylesheet" href="./styles.css?v=20260905-3" />
   </head>
   <body>
     <header class="topbar">
@@ -54,7 +54,21 @@
             <p class="tool-subtitle">標高から、周りより低い場所を見つけやすく</p>
           </div>
         </div>
-        <nav class="header-actions" aria-label="Bousai Wx Labの関連リンク">
+        <div class="header-actions" aria-label="共有とBousai Wx Labの関連リンク">
+          <div class="header-share-actions" role="group" aria-label="表示中の地図を共有または保存">
+            <button id="copyLinkButton" type="button" title="現在の表示を開ける共有リンクをコピー">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M9.5 14.5 14.5 9.5M7.2 16.8l-1.1 1.1a3.5 3.5 0 0 1-5-5l4-4a3.5 3.5 0 0 1 5 0M16.8 7.2l1.1-1.1a3.5 3.5 0 1 1 5 5l-4 4a3.5 3.5 0 0 1-5 0"></path>
+              </svg>
+              <span id="copyLinkLabel" class="header-action-label">リンク取得</span>
+            </button>
+            <button id="downloadButton" type="button" title="現在の地図を凡例・縮尺・出典付きPNGで保存">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M12 2v13m-5-5 5 5 5-5M4 17v4h16v-4"></path>
+              </svg>
+              <span id="downloadLabel" class="header-action-label">PNG保存</span>
+            </button>
+          </div>
           <a class="sns-link x-link" href="https://x.com/bousai_wx_lab" target="_blank" rel="noopener noreferrer" aria-label="Bousai Wx LabのXを開く" title="Xを開く">
             <span class="x-mark" aria-hidden="true">
               <svg viewBox="0 0 24 24" focusable="false">
@@ -64,7 +78,8 @@
             </span>
             <span class="sns-label">X</span>
           </a>
-        </nav>
+          <p id="shareActionStatus" class="visually-hidden" role="status" aria-live="polite"></p>
+        </div>
       </div>
     </header>
 
@@ -185,21 +200,6 @@
             <span><i class="legend-color c4"></i>10 m以上</span>
             <small>危険度ではありません</small>
           </div>
-          <div class="map-share-actions" role="group" aria-label="表示中の地図を共有または保存">
-            <button id="copyLinkButton" type="button" title="現在の表示を開ける共有リンクをコピー">
-              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <path d="M9.5 14.5 14.5 9.5M7.2 16.8l-1.1 1.1a3.5 3.5 0 0 1-5-5l4-4a3.5 3.5 0 0 1 5 0M16.8 7.2l1.1-1.1a3.5 3.5 0 1 1 5 5l-4 4a3.5 3.5 0 0 1-5 0"></path>
-              </svg>
-              <span id="copyLinkLabel">リンク取得</span>
-            </button>
-            <button id="downloadButton" type="button" title="現在の地図を凡例・縮尺・出典付きPNGで保存">
-              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <path d="M12 2v13m-5-5 5 5 5-5M4 17v4h16v-4"></path>
-              </svg>
-              <span id="downloadLabel">PNG保存</span>
-            </button>
-          </div>
-          <p id="shareActionStatus" class="visually-hidden" role="status" aria-live="polite"></p>
           <div id="loadingPanel" class="loading-panel" role="status" aria-live="polite" hidden></div>
           <div id="tooltip" class="tooltip" hidden></div>
           <div id="mapScale" class="map-scale" aria-label="縮尺">
