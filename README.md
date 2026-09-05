@@ -66,7 +66,7 @@ Web Workerで円の各行の陸地面積・標高合計を累積し、円内の�
 - 公開ファイルは `assets/bousaiwxlab-site-icon.png`、512×512px、RGB PNG、266,670 bytes、SHA-256 `f2258fc48adea8bdcf175699fb08b434b039c0aee83a4439c181741f3c2a4c9e`
 - EXIF/XMPは色空間・画像寸法以外の人物名、位置情報、端末情報を含まないことを確認
 - X導線は[公式ブランドツールキット](https://about.x.com/ja/who-we-are/brand-toolkit)の黒地・白ロゴ表現に合わせたベクター形状を、リンク識別用途だけに使用
-- Open Graph／Xカード画像はユーザー提供PNGを無加工で自己ホストし、`assets/terrain-depression-share-card.png`、1731×909px、RGB PNG、2,587,161 bytes、SHA-256 `d62c3ad73ac14bd46fa6300b155d3d1243cd20f3404c5a7f8fab1699e2615afd`
+- Open Graph／Xカード画像はユーザー提供PNGを無加工で自己ホストし、`assets/terrain-depression-share-card.png`、1774×887px、RGB PNG、2,717,426 bytes、SHA-256 `9a009f0503a2e3c0218965e4c4a673575101149a0bc5333aab693ba497376159`
 - カード画像のPNGメタデータはsRGBと画像寸法だけで、人物名、位置情報、撮影日時、端末情報、テキストコメントを含まないことを確認
 
 ## ローカル確認

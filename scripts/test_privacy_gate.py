@@ -38,6 +38,7 @@ class GitObjectTests(unittest.TestCase):
         self.allow = {
             "allowed_git_identities": [{"name": "github-actions[bot]", "email": "41898282+github-actions[bot]@users.noreply.github.com"}],
             "allowed_external_hosts": [], "allowed_remote_urls": [], "allowed_binary_assets": [],
+            "allowed_historical_binary_assets": [],
             "allowed_files": ["safe.js", "large.json"], "large_text_files": {"large.json": 5000}, "max_file_bytes": 1000,
         }
         self.blob = self.object("blob", b"const safe = 1;\n")
@@ -135,6 +136,40 @@ class GitObjectTests(unittest.TestCase):
         self.tree_object("large.json", large)
         self.tree_object("unapproved.json", large)
         self.assertTrue(any("approved path size" in item for item in self.findings()))
+
+    def test_explicit_historical_binary_at_original_path_passes(self):
+        data = (SOURCE_ROOT / "assets/bousaiwxlab-site-icon.png").read_bytes()
+        blob = self.object("blob", data)
+        self.tree_object("historical.png", blob)
+        self.allow["allowed_files"].append("historical.png")
+        self.allow["allowed_historical_binary_assets"] = [{
+            "path": "historical.png",
+            "bytes": len(data),
+            "sha256": hashlib.sha256(data).hexdigest(),
+            "mime_type": "image/png",
+            "width": 512,
+            "height": 512,
+            "bit_depth": 8,
+            "color_type": 2,
+        }]
+        self.assertEqual(self.findings(), [])
+
+    def test_historical_binary_at_another_path_fails(self):
+        data = (SOURCE_ROOT / "assets/bousaiwxlab-site-icon.png").read_bytes()
+        blob = self.object("blob", data)
+        self.tree_object("renamed.png", blob)
+        self.allow["allowed_files"].append("historical.png")
+        self.allow["allowed_historical_binary_assets"] = [{
+            "path": "historical.png",
+            "bytes": len(data),
+            "sha256": hashlib.sha256(data).hexdigest(),
+            "mime_type": "image/png",
+            "width": 512,
+            "height": 512,
+            "bit_depth": 8,
+            "color_type": 2,
+        }]
+        self.assertTrue(any("historical binary asset path mismatch" in item for item in self.findings()))
 
     def test_packed_unreachable_identity_is_checked(self):
         bad = self.commit_object(self.tree, author=self.identity.replace("github-actions[bot]", "Unapproved", 1))

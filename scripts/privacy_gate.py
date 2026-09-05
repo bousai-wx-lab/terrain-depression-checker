@@ -400,7 +400,22 @@ def _validate_git(allowlist: dict) -> list[str]:
     allowed = {(item["name"], item["email"]) for item in allowlist["allowed_git_identities"]}
     emails = {email for _, email in allowed}
     hosts = set(allowlist["allowed_external_hosts"])
-    binaries = {item["sha256"] for item in allowlist.get("allowed_binary_assets", [])}
+    current_binary_records = {
+        item["sha256"]: item for item in allowlist.get("allowed_binary_assets", [])
+    }
+    historical_binary_records = {
+        item["sha256"]: item for item in allowlist.get("allowed_historical_binary_assets", [])
+    }
+    if (
+        len(current_binary_records) != len(allowlist.get("allowed_binary_assets", []))
+        or len(historical_binary_records) != len(allowlist.get("allowed_historical_binary_assets", []))
+        or set(current_binary_records) & set(historical_binary_records)
+    ):
+        return ["duplicate or conflicting binary asset approval"]
+    if any(item.get("path") not in allowlist["allowed_files"] for item in historical_binary_records.values()):
+        return ["historical binary asset path is not allowlisted"]
+    binary_records = current_binary_records | historical_binary_records
+    binaries = set(binary_records)
     large_paths = allowlist.get("large_text_files", {})
     if not set(large_paths) <= set(allowlist["allowed_files"]):
         return ["large text approval contains unapproved paths"]
@@ -430,13 +445,14 @@ def _validate_git(allowlist: dict) -> list[str]:
     if not objects or len(objects) > 100000 or sum(size for _, size in objects.values()) > 1024 * 1024 * 1024:
         return ["Git object inventory is empty or exceeds inspection bounds"]
     max_size = max([int(allowlist["max_file_bytes"]), *large_paths.values(),
-                    *[item["bytes"] for item in allowlist.get("allowed_binary_assets", [])]])
+                    *[item["bytes"] for item in binary_records.values()]])
     if any(size > max_size for _, size in objects.values()):
         return ["Git object exceeds inspection size limit"]
 
     trees = {}
     texts = {}
     binary_ids = set()
+    binary_digests = {}
     roots = set()
     ids = list(objects)
     # Small batches avoid thousands of subprocesses and do not persist raw
@@ -468,10 +484,14 @@ def _validate_git(allowlist: dict) -> list[str]:
             else:
                 text = read_text_or_none(data)
                 if text is None:
-                    if kind != "blob" or digest_bytes(data) not in binaries:
+                    digest = digest_bytes(data)
+                    if kind != "blob" or digest not in binaries:
                         findings.append(f"binary or non-UTF-8 Git object: {label}")
                     else:
                         binary_ids.add(object_id)
+                        binary_digests[object_id] = digest
+                        record = binary_records[digest]
+                        findings.extend(validate_binary_asset(record["path"], data, record))
                 else:
                     findings.extend(scan_text(label, text, emails, hosts))
                     if kind == "blob":
@@ -514,6 +534,11 @@ def _validate_git(allowlist: dict) -> list[str]:
     for object_id, (kind, size) in objects.items():
         label = f"git-object@{object_id[:12]}"
         paths = blob_paths.get(object_id, set())
+        digest = binary_digests.get(object_id)
+        if digest in historical_binary_records:
+            approved_path = historical_binary_records[digest]["path"]
+            if not paths or paths != {approved_path}:
+                findings.append(f"historical binary asset path mismatch: {label}")
         if size > int(allowlist["max_file_bytes"]) and object_id not in binary_ids:
             if kind != "blob" or not paths or any(size > large_paths.get(path, 0) for path in paths):
                 findings.append(f"Git object exceeds approved path size: {label}")

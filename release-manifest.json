@@ -22,7 +22,7 @@
       "bytes": 12230,
       "mime_type": "text/markdown",
       "path": "README.md",
-      "sha256": "a0cd23746f278baf9fd38191500cffc1c394d958e0334e0cac86fa3a39cd9df8"
+      "sha256": "d89c92069488426c60bb02fd0e28bd102bb3dcc7ee7085eb66c29352b62607e4"
     },
     {
       "bytes": 2705,
@@ -55,10 +55,10 @@
       "sha256": "f2258fc48adea8bdcf175699fb08b434b039c0aee83a4439c181741f3c2a4c9e"
     },
     {
-      "bytes": 2587161,
+      "bytes": 2717426,
       "mime_type": "image/png",
       "path": "assets/terrain-depression-share-card.png",
-      "sha256": "d62c3ad73ac14bd46fa6300b155d3d1243cd20f3404c5a7f8fab1699e2615afd"
+      "sha256": "9a009f0503a2e3c0218965e4c4a673575101149a0bc5333aab693ba497376159"
     },
     {
       "bytes": 688347,
@@ -33622,13 +33622,13 @@
       "bytes": 15968,
       "mime_type": "text/html",
       "path": "index.html",
-      "sha256": "52abfcb1b77d46e98e140d3ea945251cccbd762c4b008247bea0a11b9bb8a96f"
+      "sha256": "33d9516fa9c79dd11d7c4dea50e86e5964959e73521906cf1f450e916c04da4f"
     },
     {
-      "bytes": 1524863,
+      "bytes": 1525204,
       "mime_type": "application/json",
       "path": "release-allowlist.json",
-      "sha256": "2641521af849a7db1203adcde09ec4742f95461b39f6787c9cb6e8663e529b2c"
+      "sha256": "4aad9f9b6caca21a56e342831b22c28a7ef66ccc6162af1b5e494cf7d9202093"
     },
     {
       "bytes": 8659,
@@ -33661,10 +33661,10 @@
       "sha256": "5ecd09131c0d89850a3de328d017145a99ece5deca49721a59375d6e67133624"
     },
     {
-      "bytes": 25640,
+      "bytes": 26990,
       "mime_type": "text/x-python",
       "path": "scripts/privacy_gate.py",
-      "sha256": "8567db4975d21a016860c99fbf6f9a5046b72c519e62472a957ab1b56be0eb2f"
+      "sha256": "45d290cad54ab535430321096b1f2e3da1c6cc8164e95986f392e8e6c00e5d5c"
     },
     {
       "bytes": 1462,
@@ -33679,10 +33679,10 @@
       "sha256": "e6a504bd0a36b6d58831de6b11a3eefd20fb31b362caf6b632267e9939be1f11"
     },
     {
-      "bytes": 14341,
+      "bytes": 15825,
       "mime_type": "text/x-python",
       "path": "scripts/test_privacy_gate.py",
-      "sha256": "dbf423e793aeefed0cd1ded56d2eb0d7a0596ed47281e9fa453d37886900f76e"
+      "sha256": "ef0acfa1a35ee7cea2153bb685b2dc0e1e3079913e7d30c1b5c4fcc30fcc8f0b"
     },
     {
       "bytes": 19878,
@@ -33715,7 +33715,7 @@
       "sha256": "bd35bb8f88084be3b0453c98ddb9a02f921fece9e7d72fd2b54cc471eb68224d"
     }
   ],
-  "generated_at_utc": "2026-09-05T05:39:19+00:00",
+  "generated_at_utc": "2026-09-05T06:47:15+00:00",
   "schema_version": 1,
   "tool_slug": "terrain-depression-checker"
 }
