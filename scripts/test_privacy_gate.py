@@ -139,6 +139,11 @@ class GitObjectTests(unittest.TestCase):
     def test_packed_unreachable_identity_is_checked(self):
         bad = self.commit_object(self.tree, author=self.identity.replace("github-actions[bot]", "Unapproved", 1))
         self.git("pack-objects", ".git/objects/pack/fixture", data=(bad + "\n").encode())
+        # Remove only this disposable fixture's loose copy to prove pack-only
+        # inspection, rather than accidentally reading the original loose data.
+        loose = self.root / ".git/objects" / bad[:2] / bad[2:]
+        loose.unlink()
+        self.assertFalse(loose.exists())
         self.assertTrue(any("author identity" in item for item in self.findings()))
 
     def test_git_command_failures_cannot_pass(self):

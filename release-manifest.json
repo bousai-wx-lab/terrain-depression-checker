@@ -33679,10 +33679,10 @@
       "sha256": "e6a504bd0a36b6d58831de6b11a3eefd20fb31b362caf6b632267e9939be1f11"
     },
     {
-      "bytes": 14056,
+      "bytes": 14341,
       "mime_type": "text/x-python",
       "path": "scripts/test_privacy_gate.py",
-      "sha256": "4d41754c78bd10853ece601e2b27cc6407b633b582124c025eeb21911b1a4eab"
+      "sha256": "dbf423e793aeefed0cd1ded56d2eb0d7a0596ed47281e9fa453d37886900f76e"
     },
     {
       "bytes": 19878,
@@ -33715,7 +33715,7 @@
       "sha256": "bd35bb8f88084be3b0453c98ddb9a02f921fece9e7d72fd2b54cc471eb68224d"
     }
   ],
-  "generated_at_utc": "2026-09-05T05:36:05+00:00",
+  "generated_at_utc": "2026-09-05T05:39:19+00:00",
   "schema_version": 1,
   "tool_slug": "terrain-depression-checker"
 }
