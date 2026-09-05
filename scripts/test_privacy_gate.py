@@ -233,8 +233,13 @@ class BrowserSecurityTests(unittest.TestCase):
         policy = dict((value.strip().split(" ", 1) + [""])[:2] for value in policies[0].split(";"))
         for key in ("default-src", "base-uri", "object-src", "frame-src", "script-src-attr", "style-src-attr", "form-action"):
             self.assertEqual(policy[key], "'none'")
-        for key in ("script-src", "style-src", "worker-src"):
+        for key in ("style-src", "worker-src"):
             self.assertEqual(policy[key], "'self'")
+        self.assertEqual(policy["script-src"], "'self'")
+        self.assertEqual(policy["script-src-elem"], "'self' https://www.googletagmanager.com")
+        self.assertIn("https://*.google-analytics.com", policy["img-src"])
+        self.assertIn("https://*.google-analytics.com", policy["connect-src"])
+        self.assertIn("https://*.analytics.google.com", policy["connect-src"])
         self.assertNotIn("frame-ancestors", policy)  # Invalid in a meta policy.
         for tag, attrs in parser.tags:
             self.assertFalse(any(key.lower().startswith("on") for key in attrs))
@@ -242,9 +247,23 @@ class BrowserSecurityTests(unittest.TestCase):
                 self.assertEqual(attrs.get("type"), "module")
                 self.assertTrue(attrs.get("src", "").startswith("./"))
                 self.assertEqual(attrs.get("referrerpolicy"), "no-referrer")
-        for phrase in ("クリップボード", "ブラウザ履歴", "通信記録", "IPアドレス", "GitHub Pages", "キャッシュ"):
+        for phrase in ("クリップボード", "ブラウザ履歴", "通信記録", "IPアドレス", "GitHub Pages", "キャッシュ", "Google Analytics", "アクセス解析の設定"):
             self.assertIn(phrase, html)
         self.assertNotIn("サーバーや端末内へ保存はしません", html)
+
+    def test_exact_analytics_storage_allowance(self):
+        allowed = {
+            "analytics-consent.js": {
+                "localStorage": [
+                    "window.localStorage.getItem(CONSENT_STORAGE_KEY)",
+                    "window.localStorage.setItem(CONSENT_STORAGE_KEY, value)",
+                ]
+            }
+        }
+        safe = "window.localStorage.getItem(CONSENT_STORAGE_KEY); window.localStorage.setItem(CONSENT_STORAGE_KEY, value);"
+        self.assertEqual(MODULE.scan_text("analytics-consent.js", safe, set(), set(), allowed), [])
+        self.assertTrue(MODULE.scan_text("other.js", safe, set(), set(), allowed))
+        self.assertTrue(MODULE.scan_text("analytics-consent.js", safe + " window.localStorage.clear();", set(), set(), allowed))
 
     def test_request_credentials_and_referrer_contract(self):
         worker = (SOURCE_ROOT / "analysis-worker.js").read_text()

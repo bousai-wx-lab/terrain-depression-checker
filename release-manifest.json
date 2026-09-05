@@ -1,10 +1,10 @@
 {
   "files": [
     {
-      "bytes": 4162,
+      "bytes": 4275,
       "mime_type": "application/yaml",
       "path": ".github/workflows/privacy-gate.yml",
-      "sha256": "0cba9d52986ee9318a6dc643aff985a20dc419957eda2f17e9ac2b59a77b9f24"
+      "sha256": "c62c1164a5296583d51c416edf7387913cab152d202a4ed10111fb5b31834b63"
     },
     {
       "bytes": 87,
@@ -19,10 +19,10 @@
       "sha256": "ca656e33f8e358eed2ba12861f00e15782359055c2d92b10a2bf019edf8af953"
     },
     {
-      "bytes": 12878,
+      "bytes": 13713,
       "mime_type": "text/markdown",
       "path": "README.md",
-      "sha256": "ddc79e77be9ea69f91f96dce7af6ffb5f5a51889d98a2ac202cb070839de0d97"
+      "sha256": "198ac4d5b77a6a8b12af575e27007d4a5532edbce15e914ea649fb66971c933a"
     },
     {
       "bytes": 2705,
@@ -35,6 +35,12 @@
       "mime_type": "text/javascript",
       "path": "analysis-worker.js",
       "sha256": "4d964c39d3bd708ae9b317baee4c2b8b3caa12462769b20bb0443568bc0d0a7c"
+    },
+    {
+      "bytes": 3107,
+      "mime_type": "text/javascript",
+      "path": "analytics-consent.js",
+      "sha256": "6de0c2294a30f3b88e8d72b40ecf0e75890e531286019af2e8f2c3e4531f26f8"
     },
     {
       "bytes": 48846,
@@ -33619,10 +33625,10 @@
       "sha256": "9668a7fca9a14ff50d0be3391e0bc3eb4dd004d5b4cdf9ab9412c9152a9df93b"
     },
     {
-      "bytes": 17270,
+      "bytes": 19159,
       "mime_type": "text/html",
       "path": "index.html",
-      "sha256": "75a01dac82da03e6aff4a4b46e850974761cbbcdd070eebed9bd49312233afd7"
+      "sha256": "a24c1e33af5327255fef8b08493b5fd78594118079af09d2c6b5b9e3c6dbc1f4"
     },
     {
       "bytes": 1033,
@@ -33631,10 +33637,10 @@
       "sha256": "2975400d946fa708cfed9f7a67c7eacc6c2e39e793512db83f06d31f82ee7500"
     },
     {
-      "bytes": 1525747,
+      "bytes": 1526135,
       "mime_type": "application/json",
       "path": "release-allowlist.json",
-      "sha256": "8f434a4c614e4c328cac37e16b2bdb922ce267608ab97f49ca66afbb0ef3d3a7"
+      "sha256": "11323069b99fa3c231d2862b355ace2c9a150c9f7e1dce553d7e3d4aeaf9a248"
     },
     {
       "bytes": 8659,
@@ -33667,10 +33673,10 @@
       "sha256": "5ecd09131c0d89850a3de328d017145a99ece5deca49721a59375d6e67133624"
     },
     {
-      "bytes": 26990,
+      "bytes": 27913,
       "mime_type": "text/x-python",
       "path": "scripts/privacy_gate.py",
-      "sha256": "45d290cad54ab535430321096b1f2e3da1c6cc8164e95986f392e8e6c00e5d5c"
+      "sha256": "b3968879abb9505463dc77f3eaa5533b5909f0da2f5e2fe2197d347b2c85e116"
     },
     {
       "bytes": 1462,
@@ -33685,22 +33691,28 @@
       "sha256": "e6a504bd0a36b6d58831de6b11a3eefd20fb31b362caf6b632267e9939be1f11"
     },
     {
-      "bytes": 15825,
+      "bytes": 17023,
       "mime_type": "text/x-python",
       "path": "scripts/test_privacy_gate.py",
-      "sha256": "ef0acfa1a35ee7cea2153bb685b2dc0e1e3079913e7d30c1b5c4fcc30fcc8f0b"
+      "sha256": "f288e929f2d608891458858ee665dd5ae11775d19e6277d613cb56cca192aa83"
     },
     {
-      "bytes": 26227,
+      "bytes": 27614,
       "mime_type": "text/css",
       "path": "styles.css",
-      "sha256": "ccdb1dd21e5e520fecde6c852df6d0207291dd8316a1e4aa1675dfde81c006a7"
+      "sha256": "f9b968250337123797d06c7d0f0391b469cda89205a5c8cfb6ca839c555004af"
     },
     {
       "bytes": 12774,
       "mime_type": "text/javascript",
       "path": "terrain.js",
       "sha256": "145c5369a8eead6f915aa3d218db9915b6e77b1a9912578db3cf9963209fd0bd"
+    },
+    {
+      "bytes": 1722,
+      "mime_type": "text/javascript",
+      "path": "tests/analytics.test.mjs",
+      "sha256": "28df6c2f6e225cac14868518b86376909fa352889c00f77c9f07c0958dd45cbc"
     },
     {
       "bytes": 3647,
@@ -33727,7 +33739,7 @@
       "sha256": "bd35bb8f88084be3b0453c98ddb9a02f921fece9e7d72fd2b54cc471eb68224d"
     }
   ],
-  "generated_at_utc": "2026-09-05T10:20:19+00:00",
+  "generated_at_utc": "2026-09-05T12:56:09+00:00",
   "schema_version": 1,
   "tool_slug": "terrain-depression-checker"
 }

@@ -584,6 +584,71 @@ dd {
   cursor: pointer;
 }
 
+.analytics-settings-button {
+  min-height: 36px;
+  padding: 5px 10px;
+  border: 1px solid #8aa7ba;
+  border-radius: 6px;
+  background: #f5f9fc;
+  color: #173f5c;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.analytics-consent[hidden] {
+  display: none !important;
+}
+
+.analytics-consent {
+  position: fixed;
+  z-index: 100;
+  right: 16px;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  display: grid;
+  width: min(560px, calc(100vw - 32px));
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid #6e8aa0;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 16px 46px rgb(3 31 54 / 30%);
+}
+
+.analytics-consent strong {
+  color: #113c5d;
+  font-size: 15px;
+}
+
+.analytics-consent p {
+  margin: 4px 0 0;
+  color: #465b6c;
+  font-size: 12px;
+}
+
+.analytics-consent-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.analytics-consent-actions button {
+  min-height: 40px;
+  padding: 7px 14px;
+  border: 1px solid #8199aa;
+  border-radius: 7px;
+  background: #f2f6f9;
+  color: #17384f;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.analytics-consent-actions .analytics-accept {
+  border-color: #176761;
+  background: #176761;
+  color: #fff;
+}
+
 .map-panel {
   min-width: 0;
   min-height: 0;
@@ -1435,6 +1500,17 @@ dd {
     left: 8px;
     max-width: calc(100% - 150px);
     transform: none;
+  }
+
+  .analytics-consent {
+    right: 8px;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    width: calc(100vw - 16px);
+    padding: 12px;
+  }
+
+  .analytics-consent-actions button {
+    flex: 1 1 0;
   }
 }
 

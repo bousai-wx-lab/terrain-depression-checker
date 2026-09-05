@@ -51,6 +51,8 @@ jobs:
         run: node tests/display-contract.test.mjs
       - name: Verify mobile pinch accumulation and interruption boundaries
         run: node tests/mobile-interaction.test.mjs
+      - name: Verify consent-gated analytics and coordinate exclusion
+        run: node tests/analytics.test.mjs
 
   build-pages-artifact:
     needs: verify-public-surface
