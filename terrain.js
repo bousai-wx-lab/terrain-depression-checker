@@ -1,8 +1,14 @@
 export const EARTH_CIRCUMFERENCE_METERS = 40075016.68557849;
+export const SPHERICAL_EARTH_RADIUS_METERS = 6371008.8;
 export const TILE_SIZE = 256;
-export const DEM_ZOOM = 14;
+export const DEM_ZOOM = 15;
 export const MAX_MAP_ZOOM = 18;
 export const SHARE_STATE_VERSION = "1";
+export const RING_SECTOR_COUNT = 16;
+export const MIN_RING_COVERAGE_RATIO = 0.2;
+export const MIN_RING_SECTORS = 4;
+export const MIN_RING_QUADRANTS = 3;
+export const MIN_RADIUS_SOURCE_PIXELS = 2;
 export const TILE_MAX_ZOOM = Object.freeze({
   std: 18,
   pale: 18,
@@ -119,11 +125,48 @@ export function scaleBarSpec(latitude, zoom, maxWidth = 120) {
   return { meters, pixels, label };
 }
 
-export function minimumRingSamples(radiusMeters) {
-  const radius = Number(radiusMeters);
-  if (radius >= 50000) return 4;
-  if (radius >= 10000) return 6;
-  return 10;
+export function destinationPoint(longitude, latitude, distanceMeters, bearingRadians) {
+  const angularDistance = Number(distanceMeters) / SPHERICAL_EARTH_RADIUS_METERS;
+  const bearing = Number(bearingRadians);
+  const latitude1 = clampLatitude(latitude) * Math.PI / 180;
+  const longitude1 = Number(longitude) * Math.PI / 180;
+  const latitude2 = Math.asin(
+    Math.sin(latitude1) * Math.cos(angularDistance)
+      + Math.cos(latitude1) * Math.sin(angularDistance) * Math.cos(bearing),
+  );
+  const longitude2 = longitude1 + Math.atan2(
+    Math.sin(bearing) * Math.sin(angularDistance) * Math.cos(latitude1),
+    Math.cos(angularDistance) - Math.sin(latitude1) * Math.sin(latitude2),
+  );
+  return {
+    longitude: ((longitude2 * 180 / Math.PI + 540) % 360) - 180,
+    latitude: latitude2 * 180 / Math.PI,
+  };
+}
+
+export function greatCircleDistanceMeters(first, second) {
+  const latitude1 = Number(first.latitude) * Math.PI / 180;
+  const latitude2 = Number(second.latitude) * Math.PI / 180;
+  const latitudeDelta = latitude2 - latitude1;
+  const longitudeDelta = (Number(second.longitude) - Number(first.longitude)) * Math.PI / 180;
+  const haversine = Math.sin(latitudeDelta / 2) ** 2
+    + Math.cos(latitude1) * Math.cos(latitude2) * Math.sin(longitudeDelta / 2) ** 2;
+  return SPHERICAL_EARTH_RADIUS_METERS * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+}
+
+export function ringSamplingSpec(radiusMeters, sourceResolutionMeters) {
+  const radius = Math.max(1, Number(radiusMeters));
+  const sourceResolution = Math.max(0.01, Number(sourceResolutionMeters));
+  const targetArcSpacing = Math.max(sourceResolution * 4, radius / 96);
+  const rawCount = Math.ceil(2 * Math.PI * radius / targetArcSpacing);
+  const sampleCount = Math.max(96, Math.min(256, Math.ceil(rawCount / RING_SECTOR_COUNT) * RING_SECTOR_COUNT));
+  return {
+    sampleCount,
+    sectorCount: RING_SECTOR_COUNT,
+    minimumCoverageRatio: MIN_RING_COVERAGE_RATIO,
+    minimumSectorCount: MIN_RING_SECTORS,
+    minimumQuadrantCount: MIN_RING_QUADRANTS,
+  };
 }
 
 export function tileSourceZoom(layer, requestedZoom) {
@@ -175,6 +218,62 @@ export function calculateRelativeDepth(centerElevation, surroundingElevations, m
     surroundingMean,
     depth: surroundingMean - centerElevation,
     sampleCount: valid.length,
+  };
+}
+
+export function calculateDirectionalRelativeDepth(centerElevation, surroundingElevations, specification) {
+  if (!Number.isFinite(centerElevation)) return null;
+  const sampleCount = surroundingElevations.length;
+  const sectorCount = Number(specification?.sectorCount ?? RING_SECTOR_COUNT);
+  if (!Number.isInteger(sectorCount) || sectorCount < 4 || sampleCount < sectorCount || sampleCount % sectorCount !== 0) {
+    throw new RangeError("Directional ring samples must divide evenly into at least four sectors");
+  }
+
+  const samplesPerSector = sampleCount / sectorCount;
+  const minimumPerSector = Math.max(2, Math.ceil(samplesPerSector * 0.25));
+  const minimumCoverageRatio = Number(specification?.minimumCoverageRatio ?? MIN_RING_COVERAGE_RATIO);
+  const minimumSectorCount = Number(specification?.minimumSectorCount ?? MIN_RING_SECTORS);
+  const minimumQuadrantCount = Number(specification?.minimumQuadrantCount ?? MIN_RING_QUADRANTS);
+  const sectorMeans = [];
+  const quadrantIndexes = new Set();
+  let validCount = 0;
+  let usableSampleCount = 0;
+
+  for (let sector = 0; sector < sectorCount; sector += 1) {
+    let sectorSum = 0;
+    let sectorValid = 0;
+    const start = sector * samplesPerSector;
+    for (let offset = 0; offset < samplesPerSector; offset += 1) {
+      const elevation = surroundingElevations[start + offset];
+      if (!Number.isFinite(elevation)) continue;
+      sectorSum += elevation;
+      sectorValid += 1;
+      validCount += 1;
+    }
+    if (sectorValid < minimumPerSector) continue;
+    sectorMeans.push(sectorSum / sectorValid);
+    usableSampleCount += sectorValid;
+    quadrantIndexes.add(Math.min(3, Math.floor(sector * 4 / sectorCount)));
+  }
+
+  const coverageRatio = usableSampleCount / sampleCount;
+  if (
+    coverageRatio < minimumCoverageRatio
+    || sectorMeans.length < minimumSectorCount
+    || quadrantIndexes.size < minimumQuadrantCount
+  ) return null;
+
+  const surroundingMean = sectorMeans.reduce((sum, value) => sum + value, 0) / sectorMeans.length;
+  return {
+    center: centerElevation,
+    surroundingMean,
+    depth: surroundingMean - centerElevation,
+    sampleCount: validCount,
+    usableSampleCount,
+    sampleCapacity: sampleCount,
+    coverageRatio,
+    sectorCount: sectorMeans.length,
+    quadrantCount: quadrantIndexes.size,
   };
 }
 

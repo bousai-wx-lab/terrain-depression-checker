@@ -3,14 +3,17 @@ import {
   MAX_MAP_ZOOM,
   TILE_MAX_ZOOM,
   analysisSourceZoom,
+  calculateDirectionalRelativeDepth,
   calculateRelativeDepth,
   decodeElevationRgb,
   depthColor,
+  destinationPoint,
   elevationDifference,
+  greatCircleDistanceMeters,
   lonLatToWorldPixel,
   metersPerPixel,
-  minimumRingSamples,
   parseShareState,
+  ringSamplingSpec,
   scaleBarSpec,
   serializeShareState,
   tileCoordinate,
@@ -66,7 +69,8 @@ assert.throws(() => tileSourceZoom("unknown", 18), RangeError);
 assert.equal(analysisSourceZoom(5), 5);
 assert.equal(analysisSourceZoom(12), 12);
 assert.equal(analysisSourceZoom(14), 14);
-assert.equal(analysisSourceZoom(18), 14);
+assert.equal(analysisSourceZoom(15), 15);
+assert.equal(analysisSourceZoom(18), 15);
 
 const scaleAtZoom14 = scaleBarSpec(35.681, 14, 120);
 assert.equal(scaleAtZoom14.label, "500 m");
@@ -74,10 +78,74 @@ assert.ok(scaleAtZoom14.pixels >= 60 && scaleAtZoom14.pixels <= 120);
 const scaleAtZoom5 = scaleBarSpec(35.681, 5, 120);
 assert.equal(scaleAtZoom5.label, "200 km");
 assert.ok(scaleAtZoom5.pixels >= 40 && scaleAtZoom5.pixels <= 120);
-assert.equal(minimumRingSamples(500), 10);
-assert.equal(minimumRingSamples(10000), 6);
-assert.equal(minimumRingSamples(50000), 4);
-assert.equal(minimumRingSamples(300000), 4);
+const destination = destinationPoint(139.767, 35.681, 300000, Math.PI / 3);
+assert.ok(Math.abs(greatCircleDistanceMeters({ longitude: 139.767, latitude: 35.681 }, destination) - 300000) < 0.001);
+const auditedRadii = [250, 500, 1000, 10000, 50000, 100000, 150000, 200000, 300000];
+let geodesicCases = 0;
+for (const latitude of [20, 35.681, 48]) {
+  for (const radius of auditedRadii) {
+    for (let bearingIndex = 0; bearingIndex < 12; bearingIndex += 1) {
+      const origin = { longitude: 139.767, latitude };
+      const point = destinationPoint(origin.longitude, origin.latitude, radius, bearingIndex * Math.PI / 6);
+      assert.ok(Math.abs(greatCircleDistanceMeters(origin, point) - radius) < 0.001);
+      geodesicCases += 1;
+    }
+  }
+}
+
+const smallRing = ringSamplingSpec(250, 7.5);
+assert.equal(smallRing.sampleCount, 96);
+const mediumRing = ringSamplingSpec(500, 7.5);
+assert.equal(mediumRing.sampleCount, 112);
+const largeRing = ringSamplingSpec(300000, 500);
+assert.equal(largeRing.sampleCount, 256);
+
+const completeRing = Array(largeRing.sampleCount).fill(10);
+const directional = calculateDirectionalRelativeDepth(8, completeRing, largeRing);
+assert.ok(directional);
+assert.equal(directional.surroundingMean, 10);
+assert.equal(directional.depth, 2);
+assert.equal(directional.sampleCount, 256);
+assert.equal(directional.sectorCount, 16);
+assert.equal(directional.quadrantCount, 4);
+
+const sparseRing = Array(largeRing.sampleCount).fill(Number.NaN);
+for (let index = 0; index < 5; index += 1) sparseRing[index] = 100;
+assert.equal(calculateDirectionalRelativeDepth(8, sparseRing, largeRing), null);
+
+const balancedPartialRing = Array(largeRing.sampleCount).fill(Number.NaN);
+for (const sector of [0, 4, 8, 12]) {
+  for (let offset = 0; offset < 16; offset += 1) balancedPartialRing[sector * 16 + offset] = 10 + sector;
+}
+const balancedDirectional = calculateDirectionalRelativeDepth(8, balancedPartialRing, largeRing);
+assert.ok(balancedDirectional);
+assert.equal(balancedDirectional.sampleCount, 64);
+assert.equal(balancedDirectional.sectorCount, 4);
+assert.equal(balancedDirectional.quadrantCount, 4);
+
+const oneSidedRing = Array(largeRing.sampleCount).fill(Number.NaN);
+for (let index = 0; index < 80; index += 1) oneSidedRing[index] = 10;
+assert.equal(calculateDirectionalRelativeDepth(8, oneSidedRing, largeRing), null);
+
+const sectorWidth = largeRing.sampleCount / largeRing.sectorCount;
+for (let mask = 0; mask < 2 ** largeRing.sectorCount; mask += 1) {
+  const values = Array(largeRing.sampleCount).fill(Number.NaN);
+  const selectedSectors = [];
+  const selectedQuadrants = new Set();
+  for (let sector = 0; sector < largeRing.sectorCount; sector += 1) {
+    if ((mask & (1 << sector)) === 0) continue;
+    selectedSectors.push(sector);
+    selectedQuadrants.add(Math.floor(sector / 4));
+    values.fill(100 + sector, sector * sectorWidth, (sector + 1) * sectorWidth);
+  }
+  const value = calculateDirectionalRelativeDepth(50, values, largeRing);
+  const shouldPass = selectedSectors.length >= 4 && selectedQuadrants.size >= 3;
+  assert.equal(Boolean(value), shouldPass);
+  if (value) {
+    const expectedMean = selectedSectors.reduce((sum, sector) => sum + 100 + sector, 0) / selectedSectors.length;
+    assert.ok(Math.abs(value.surroundingMean - expectedMean) < 1e-12);
+  }
+}
 
 const shareQuery = serializeShareState({
   latitude: 35.681234,
@@ -117,4 +185,5 @@ assert.deepEqual(parseShareState("?v=1&centerMark=0&radiusGuide=0"), { centerMar
 assert.deepEqual(parseShareState("?v=1"), {});
 assert.deepEqual(parseShareState("?lat=35&lon=139&z=14"), {});
 
-process.stdout.write("TERRAIN_ALGORITHM_TESTS_OK cases=51\nSHARE_STATE_TESTS_OK cases=18\n");
+process.stdout.write("TERRAIN_ALGORITHM_TESTS_OK cases=69\nSHARE_STATE_TESTS_OK cases=18\n");
+process.stdout.write(`GEODESIC_RADIUS_TESTS_OK cases=${geodesicCases}\nDIRECTIONAL_COVERAGE_TESTS_OK masks=${2 ** largeRing.sectorCount}\n`);

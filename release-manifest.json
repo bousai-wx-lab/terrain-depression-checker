@@ -19,10 +19,10 @@
       "sha256": "ca656e33f8e358eed2ba12861f00e15782359055c2d92b10a2bf019edf8af953"
     },
     {
-      "bytes": 6922,
+      "bytes": 7746,
       "mime_type": "text/markdown",
       "path": "README.md",
-      "sha256": "e3c2675666a3bf6aef039eeafff8c8fd43f1642ee53851a2ed57f11909876904"
+      "sha256": "b3bc7499b8f97c56a1f8a75d00035c97c0dddd1e11b64ae632b396d827fcc3c5"
     },
     {
       "bytes": 519,
@@ -31,10 +31,10 @@
       "sha256": "a4ae3ce388dc20a24be80d0d80cf1958302494f37d85f42c9b7524f5d3a4286f"
     },
     {
-      "bytes": 44145,
+      "bytes": 47627,
       "mime_type": "text/javascript",
       "path": "app.js",
-      "sha256": "562527d00897005c4ac7a90d670b51cbe0dbfc551046dc0bcbe9368504b7a8b4"
+      "sha256": "d1a834eff197713a88d6cf9a5f0c0b078fb02d97af862df029334cefd1918c77"
     },
     {
       "bytes": 266670,
@@ -49,10 +49,10 @@
       "sha256": "d62c3ad73ac14bd46fa6300b155d3d1243cd20f3404c5a7f8fab1699e2615afd"
     },
     {
-      "bytes": 14606,
+      "bytes": 14599,
       "mime_type": "text/html",
       "path": "index.html",
-      "sha256": "86566a3d7a35062aa809fe63a77adf1edc17c57e0fc0206d673711ee3d370c4b"
+      "sha256": "0013f138b249c85a5a3caa3de2d217222a2cd0ba0be1a71922d175b8a1db62af"
     },
     {
       "bytes": 1858,
@@ -85,19 +85,19 @@
       "sha256": "956cbbdcaf60f519fb019315d8e764e1f899d5c76f88cba37c75fd19970dcf92"
     },
     {
-      "bytes": 8336,
+      "bytes": 12774,
       "mime_type": "text/javascript",
       "path": "terrain.js",
-      "sha256": "7224dd8ee0fd312eec2e8c11500e0e640be70575cff8dd2235e2986a0f5bd90b"
+      "sha256": "145c5369a8eead6f915aa3d218db9915b6e77b1a9912578db3cf9963209fd0bd"
     },
     {
-      "bytes": 4699,
+      "bytes": 8091,
       "mime_type": "text/javascript",
       "path": "tests/terrain.test.mjs",
-      "sha256": "8b4c6f3152288e28b7b2b572a4e982695c8b18372d58e00fa87d2bf296e16a98"
+      "sha256": "bd35bb8f88084be3b0453c98ddb9a02f921fece9e7d72fd2b54cc471eb68224d"
     }
   ],
-  "generated_at_utc": "2026-09-04T23:40:31+00:00",
+  "generated_at_utc": "2026-09-05T00:37:48+00:00",
   "schema_version": 1,
   "tool_slug": "terrain-depression-checker"
 }
