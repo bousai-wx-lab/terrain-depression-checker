@@ -35,10 +35,19 @@ def release_files(root: Path, allowlist: dict) -> dict[str, bytes]:
 
 def verify_archive(archive: Path, expected: dict[str, bytes]) -> None:
     seen = set()
+    directories = {"."} | {"./" + str(parent) for name in expected for parent in PurePosixPath(name).parents if str(parent) != "."}
+    seen_directories = set()
     with tarfile.open(archive, "r:") as bundle:
         for member in bundle:
-            name = member.name
-            if name in seen or name not in expected or not member.isfile():
+            if member.isdir():
+                if member.name not in directories or member.name in seen_directories:
+                    raise ValueError("unexpected or duplicate archive directory")
+                if member.mode != 0o755 or member.uid or member.gid or member.uname or member.gname or member.pax_headers or member.mtime:
+                    raise ValueError("unexpected directory metadata")
+                seen_directories.add(member.name)
+                continue
+            name = member.name.removeprefix("./")
+            if not member.name.startswith("./") or name in seen or name not in expected or not member.isfile():
                 raise ValueError("unexpected, duplicate, or non-regular archive member")
             if member.uid or member.gid or member.uname or member.gname or member.pax_headers:
                 raise ValueError("unexpected archive metadata")
@@ -48,7 +57,7 @@ def verify_archive(archive: Path, expected: dict[str, bytes]) -> None:
             if member.size != len(expected[name]) or payload != expected[name]:
                 raise ValueError("archive bytes differ from the approved release")
             seen.add(name)
-    if seen != set(expected):
+    if seen != set(expected) or seen_directories != directories:
         raise ValueError("archive inventory differs from the approved release")
 
 
@@ -56,8 +65,15 @@ def build_archive(destination: Path, expected: dict[str, bytes]) -> Path:
     destination.mkdir(parents=True, exist_ok=False)
     archive = destination / "artifact.tar"
     with tarfile.open(archive, "w", format=tarfile.USTAR_FORMAT) as bundle:
-        for name, data in sorted(expected.items()):
+        # Match the directory-rooted layout used by GitHub's Pages uploader.
+        directories = {"."} | {"./" + str(parent) for name in expected for parent in PurePosixPath(name).parents if str(parent) != "."}
+        for name in sorted(directories):
             member = tarfile.TarInfo(name)
+            member.type = tarfile.DIRTYPE
+            member.mode = 0o755
+            bundle.addfile(member)
+        for name, data in sorted(expected.items()):
+            member = tarfile.TarInfo("./" + name)
             member.size = len(data)
             member.mode = 0o644
             member.mtime = 0

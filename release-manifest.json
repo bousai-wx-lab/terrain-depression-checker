@@ -4,7 +4,7 @@
       "bytes": 4035,
       "mime_type": "application/yaml",
       "path": ".github/workflows/privacy-gate.yml",
-      "sha256": "3d384944579b6d404c036d34685c73bab963895010b5b5ba37329dadaac155cd"
+      "sha256": "9655ce18a23d67e9b7b9071ed3b4989e91ed19037e4d3cc1868a8718641e9936"
     },
     {
       "bytes": 87,
@@ -33643,10 +33643,10 @@
       "sha256": "0336cb7d23efdf885d397b04846a4bf2f2da475d3fbfadacc833847ceeb591fd"
     },
     {
-      "bytes": 3576,
+      "bytes": 4723,
       "mime_type": "text/x-python",
       "path": "scripts/build_pages_artifact.py",
-      "sha256": "2c4f9f9c89ed5706c7fa6780dec55791479e7b115ca29c03f8153190b783fad7"
+      "sha256": "4ce9ae21894448d59bf3cd72a0c8df363ad0a03ec44f24d4246a6856dbc1bb2f"
     },
     {
       "bytes": 1814,
@@ -33673,10 +33673,10 @@
       "sha256": "b64a17d0d8e3d49fccfaa81bf10b52c863e5c1104af8aedf32e6c3e2fda985f9"
     },
     {
-      "bytes": 4621,
+      "bytes": 4805,
       "mime_type": "text/x-python",
       "path": "scripts/test_pages_release.py",
-      "sha256": "188b7fbccceffe4cf4e89cb6e916bb617f34396c720d5623a453b740fd3f1828"
+      "sha256": "5bcd1710720e814704958a92b9bfa0a0d40b009b9c7ada0cfe6e7648551d27d6"
     },
     {
       "bytes": 3632,
@@ -33715,7 +33715,7 @@
       "sha256": "bd35bb8f88084be3b0453c98ddb9a02f921fece9e7d72fd2b54cc471eb68224d"
     }
   ],
-  "generated_at_utc": "2026-09-05T04:39:52+00:00",
+  "generated_at_utc": "2026-09-05T04:51:40+00:00",
   "schema_version": 1,
   "tool_slug": "terrain-depression-checker"
 }

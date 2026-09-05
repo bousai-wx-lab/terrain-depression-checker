@@ -32,13 +32,17 @@ class PagesReleaseTests(unittest.TestCase):
             with self.subTest(case=case), tempfile.TemporaryDirectory() as tmp:
                 archive = Path(tmp) / "artifact.tar"
                 with tarfile.open(archive, "w", format=tarfile.USTAR_FORMAT) as bundle:
+                    root = tarfile.TarInfo(".")
+                    root.type = tarfile.DIRTYPE
+                    root.mode = 0o755
+                    bundle.addfile(root)
                     names = [] if case == "missing" else ["index.html"]
                     if case == "extra":
                         names.append("unlisted.txt")
                     if case == "duplicate":
                         names.append("index.html")
                     for name in names:
-                        member = tarfile.TarInfo("../index.html" if case == "traversal" else name)
+                        member = tarfile.TarInfo("./../index.html" if case == "traversal" else "./" + name)
                         data = b"changed" if case == "changed" else b"example"
                         member.size = len(data)
                         member.mode = 0o644
