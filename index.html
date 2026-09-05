@@ -6,7 +6,7 @@
     <meta name="referrer" content="no-referrer" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; base-uri 'none'; object-src 'none'; script-src 'self'; worker-src 'self'; style-src 'self'; img-src 'self' data: blob: https://cyberjapandata.gsi.go.jp; connect-src 'self' https://cyberjapandata.gsi.go.jp; form-action 'none'; upgrade-insecure-requests"
+      content="default-src 'none'; base-uri 'none'; object-src 'none'; frame-src 'none'; script-src 'self'; script-src-attr 'none'; worker-src 'self'; style-src 'self'; style-src-attr 'none'; img-src 'self' data: blob: https://cyberjapandata.gsi.go.jp; connect-src 'self' https://cyberjapandata.gsi.go.jp; form-action 'none'; upgrade-insecure-requests"
     />
     <meta
       name="description"
@@ -190,8 +190,9 @@
 
         <details class="privacy-note">
           <summary>プライバシーと通信</summary>
-          <p>位置情報API、住所、Cookie、ブラウザ保存領域、アクセス解析は使いません。表示範囲の地図・標高タイルを国土地理院から、事前集計データをこのサイトから取得します。ブログとXには、上部リンクを押した時だけ移動します。</p>
-          <p>「リンク取得」は表示中心の緯度・経度、ズーム、判定・地図表示の設定、選択地点がある場合はその座標をURLへ含めます。サーバーや端末内へ保存はしませんが、リンクを受け取った人には表示位置が伝わるため、個人宅などを共有する前に確認してください。</p>
+          <p>現在地の自動取得、住所入力、独自のアクセス解析は行いません。アプリ自身はCookieやWeb Storageに地点・設定を記録しません。地図・標高タイルは国土地理院から、事前集計データはこのサイトから取得するため、通信先にはIPアドレスと要求したデータのURLが伝わり、URLから表示地域を推測できる場合があります。</p>
+          <p>「リンク取得」は表示中心・選択地点の座標と表示設定をURLに含め、端末のクリップボードへコピーします。そのURLを開くと座標を含むURLがこのサイトの配信元（GitHub Pages）へ送られ、ブラウザ履歴や配信元の通信記録に残る可能性があります。クリップボード・履歴の同期や、共有先での保存にも注意し、個人宅などを共有する前にURLの内容を確認してください。</p>
+          <p>解析とPNG作成はブラウザ内で行い、作成したPNGをアプリが外部へアップロードすることはありません。PNG保存は端末へのダウンロードです。ブラウザの通常のキャッシュや配信元の記録まで無効にするものではありません。ブログとXにはリンクを押した時だけ移動します。</p>
         </details>
       </aside>
 
@@ -242,6 +243,6 @@
     </footer>
 
     <noscript>このツールの利用にはJavaScriptが必要です。</noscript>
-    <script type="module" src="./app.js?v=20260905-6"></script>
+    <script type="module" src="./app.js?v=20260905-7" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   </body>
 </html>

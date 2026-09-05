@@ -19,28 +19,28 @@
       "sha256": "ca656e33f8e358eed2ba12861f00e15782359055c2d92b10a2bf019edf8af953"
     },
     {
-      "bytes": 11587,
+      "bytes": 12230,
       "mime_type": "text/markdown",
       "path": "README.md",
-      "sha256": "00628b0b703f6c04736c931a578f633252a68ff351e4789f12d84634eeed5e24"
+      "sha256": "a0cd23746f278baf9fd38191500cffc1c394d958e0334e0cac86fa3a39cd9df8"
     },
     {
-      "bytes": 519,
+      "bytes": 2705,
       "mime_type": "text/markdown",
       "path": "SECURITY.md",
-      "sha256": "a4ae3ce388dc20a24be80d0d80cf1958302494f37d85f42c9b7524f5d3a4286f"
+      "sha256": "7d26d802f69db86d14253896c32dbcf0f39a1a1e09fef4bd3ec741854ce17b09"
     },
     {
-      "bytes": 14777,
+      "bytes": 14924,
       "mime_type": "text/javascript",
       "path": "analysis-worker.js",
-      "sha256": "327d645a416daee3cc175ec28e75c7590fb2f7af7b1ca21affac4b67bbc3fe00"
+      "sha256": "4d964c39d3bd708ae9b317baee4c2b8b3caa12462769b20bb0443568bc0d0a7c"
     },
     {
-      "bytes": 38380,
+      "bytes": 38441,
       "mime_type": "text/javascript",
       "path": "app.js",
-      "sha256": "9d7f0ee9dec643d01538c8db829dce441224794eb238ecfcf6d92b3aaded463b"
+      "sha256": "50717753b02003b7185411b77f9d8196f6762be9d55648a68f2d5a2236414150"
     },
     {
       "bytes": 6478,
@@ -33619,10 +33619,10 @@
       "sha256": "9668a7fca9a14ff50d0be3391e0bc3eb4dd004d5b4cdf9ab9412c9152a9df93b"
     },
     {
-      "bytes": 15210,
+      "bytes": 15968,
       "mime_type": "text/html",
       "path": "index.html",
-      "sha256": "1d709bc1f6593191edd74e1b0b609059b1326d156171b7837e166b75f34cf7ba"
+      "sha256": "52abfcb1b77d46e98e140d3ea945251cccbd762c4b008247bea0a11b9bb8a96f"
     },
     {
       "bytes": 1524863,
@@ -33661,10 +33661,10 @@
       "sha256": "5ecd09131c0d89850a3de328d017145a99ece5deca49721a59375d6e67133624"
     },
     {
-      "bytes": 20311,
+      "bytes": 25640,
       "mime_type": "text/x-python",
       "path": "scripts/privacy_gate.py",
-      "sha256": "52db43c224c98d4b13933fbcfc8e53079fcaa363c29dd0b493fdc63d839c1318"
+      "sha256": "8567db4975d21a016860c99fbf6f9a5046b72c519e62472a957ab1b56be0eb2f"
     },
     {
       "bytes": 1462,
@@ -33673,16 +33673,16 @@
       "sha256": "b64a17d0d8e3d49fccfaa81bf10b52c863e5c1104af8aedf32e6c3e2fda985f9"
     },
     {
-      "bytes": 4805,
+      "bytes": 4878,
       "mime_type": "text/x-python",
       "path": "scripts/test_pages_release.py",
-      "sha256": "5bcd1710720e814704958a92b9bfa0a0d40b009b9c7ada0cfe6e7648551d27d6"
+      "sha256": "e6a504bd0a36b6d58831de6b11a3eefd20fb31b362caf6b632267e9939be1f11"
     },
     {
-      "bytes": 3632,
+      "bytes": 14056,
       "mime_type": "text/x-python",
       "path": "scripts/test_privacy_gate.py",
-      "sha256": "d6c50eec3dcbce9c209e59f8505c609263192ceca288b19023c43da0d5790449"
+      "sha256": "4d41754c78bd10853ece601e2b27cc6407b633b582124c025eeb21911b1a4eab"
     },
     {
       "bytes": 19878,
@@ -33715,7 +33715,7 @@
       "sha256": "bd35bb8f88084be3b0453c98ddb9a02f921fece9e7d72fd2b54cc471eb68224d"
     }
   ],
-  "generated_at_utc": "2026-09-05T04:51:40+00:00",
+  "generated_at_utc": "2026-09-05T05:36:05+00:00",
   "schema_version": 1,
   "tool_slug": "terrain-depression-checker"
 }

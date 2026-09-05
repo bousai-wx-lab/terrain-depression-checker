@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ALLOWLIST_PATH = ROOT / "release-allowlist.json"
 MANIFEST_PATH = ROOT / "release-manifest.json"
 
-EMAIL_PATTERN = re.compile(r"(?i)\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b")
+EMAIL_PATTERN = re.compile(r"(?i)(?<![A-Z0-9._%+\-\[\]])[A-Z0-9._%+\-\[\]]+@[A-Z0-9.-]+\.[A-Z]{2,}(?![A-Z0-9-])")
 URL_PATTERN = re.compile(r"https?://[^\s<>\"')`]+")
 SAFE_NON_NETWORK_URLS = {
     "http://" + "www.w3.org/2000/svg",
@@ -95,7 +95,7 @@ def digest_bytes(data: bytes) -> str:
 
 def run_git(arguments: list[str], *, check: bool = True, input_bytes: bytes | None = None) -> subprocess.CompletedProcess[bytes]:
     return subprocess.run(
-        ["git", "-C", str(ROOT), *arguments],
+        ["git", "--no-replace-objects", "-C", str(ROOT), *arguments],
         input=input_bytes,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -126,7 +126,7 @@ def scan_text(path_label: str, text: str, allowed_emails: set[str], allowed_host
             continue
         host = (urlparse(url).hostname or "").lower()
         if host and host not in allowed_hosts:
-            findings.append(f"unapproved external host {host}: {path_label}")
+            findings.append(f"unapproved external host: {path_label}")
     suffix = Path(path_label.split("@", 1)[0]).suffix.lower()
     if suffix in {".html", ".js", ".mjs", ".svg"}:
         for token in DANGEROUS_BROWSER_TOKENS:
@@ -142,6 +142,19 @@ def read_text_or_none(data: bytes) -> str | None:
         return data.decode("utf-8")
     except UnicodeDecodeError:
         return None
+
+
+def scan_path(label: str, relative: str, allowed_emails: set[str], allowed_hosts: set[str]) -> list[str]:
+    """Scan the unquoted name, without putting a rejected name into public logs."""
+    findings = scan_text(label, "/" + relative, allowed_emails, allowed_hosts)
+    parts = relative.split("/")
+    if any(not part or part in {".", ".."} or "\\" in part or any(ord(c) < 32 for c in part) for part in parts):
+        findings.append(f"unsafe file name: {label}")
+    if any(part.lower() in FORBIDDEN_PARTS or part.lower() == ".git" for part in parts):
+        findings.append(f"forbidden directory name: {label}")
+    if any(Path(part).suffix.lower() in FORBIDDEN_SUFFIXES or part.lower() == ".env" or part.lower().startswith(".env.") for part in parts):
+        findings.append(f"forbidden file type: {label}")
+    return findings
 
 
 def inspect_png(data: bytes) -> tuple[dict[str, int], list[str]]:
@@ -254,6 +267,11 @@ def validate_worktree(allowlist: dict) -> list[str]:
         if relative.parts and relative.parts[0] == ".git":
             continue
         relative_text = relative.as_posix()
+        label = f"file@{digest_bytes(relative_text.encode())[:12]}"
+        name_findings = scan_path(label, relative_text, allowed_emails, allowed_hosts)
+        findings.extend(name_findings)
+        if name_findings or relative_text not in allowed_files:
+            relative_text = label
         if path.is_symlink():
             findings.append(f"symlink is prohibited: {relative_text}")
             continue
@@ -261,8 +279,8 @@ def validate_worktree(allowlist: dict) -> list[str]:
             if any(part in FORBIDDEN_PARTS for part in relative.parts):
                 findings.append(f"forbidden directory: {relative_text}")
             continue
-        actual_files.add(relative_text)
-        if relative_text not in allowed_files:
+        actual_files.add(relative.as_posix())
+        if relative.as_posix() not in allowed_files:
             findings.append(f"file is not allowlisted: {relative_text}")
         if path.suffix.lower() in FORBIDDEN_SUFFIXES:
             findings.append(f"forbidden file type: {relative_text}")
@@ -295,8 +313,8 @@ def validate_manifest(allowlist: dict) -> list[str]:
     findings: list[str] = []
     try:
         manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as error:
-        return [f"release manifest cannot be read: {error}"]
+    except (OSError, json.JSONDecodeError):
+        return ["release manifest cannot be read"]
     if manifest.get("tool_slug") != allowlist.get("tool_slug"):
         findings.append("release manifest tool_slug mismatch")
     expected_paths = sorted(path for path in allowlist["allowed_files"] if path != MANIFEST_PATH.name)
@@ -308,11 +326,11 @@ def validate_manifest(allowlist: dict) -> list[str]:
         findings.append("release manifest file set or order mismatch")
     for record in records:
         relative = record.get("path")
-        if not isinstance(relative, str):
+        if not isinstance(relative, str) or relative not in expected_paths:
             findings.append("release manifest contains an invalid path")
             continue
         path = ROOT / relative
-        if not path.is_file():
+        if path.is_symlink() or not path.is_file() or not path.resolve().is_relative_to(ROOT.resolve()):
             findings.append(f"manifest file is missing: {relative}")
             continue
         data = path.read_bytes()
@@ -330,8 +348,8 @@ def validate_workflow(allowlist: dict) -> list[str]:
     workflow_path = ROOT / ".github/workflows/privacy-gate.yml"
     try:
         workflow = workflow_path.read_text(encoding="utf-8")
-    except OSError as error:
-        return [f"workflow cannot be read: {error}"]
+    except OSError:
+        return ["workflow cannot be read"]
     findings: list[str] = []
     checkout = f"actions/checkout@{allowlist['required_checkout_sha']}"
     if checkout not in workflow:
@@ -345,123 +363,195 @@ def validate_workflow(allowlist: dict) -> list[str]:
     return findings
 
 
-def validate_git(allowlist: dict) -> list[str]:
-    if not (ROOT / ".git").exists():
-        return []
-    findings: list[str] = []
-    allowed_identities = {
-        (item["name"], item["email"])
-        for item in allowlist["allowed_git_identities"]
-    }
-    allowed_emails = {email for _, email in allowed_identities}
-    allowed_hosts = {host.lower() for host in allowlist["allowed_external_hosts"]}
-    allowed_binary_hashes = {
-        item["sha256"] for item in allowlist.get("allowed_binary_assets", [])
-    }
-    large_text_hashes = set()
-    for relative, limit in allowlist.get("large_text_files", {}).items():
-        path = ROOT / relative
-        if relative not in allowlist["allowed_files"] or not path.is_file() or path.stat().st_size > limit:
-            findings.append(f"large text approval is invalid: {relative}")
-            continue
-        data = path.read_bytes()
-        if read_text_or_none(data) is not None:
-            large_text_hashes.add(digest_bytes(data))
+def parse_tree(data: bytes, oid_bytes: int) -> list[tuple[str, str, str]]:
+    """Read raw NUL-delimited tree entries; Git's display quoting is not input."""
+    entries = []
+    offset = 0
+    while offset < len(data):
+        separator = data.index(b" ", offset)
+        end = data.index(b"\x00", separator)
+        mode = data[offset:separator].decode("ascii")
+        name = data[separator + 1:end].decode("utf-8", "strict")
+        object_id = data[end + 1:end + 1 + oid_bytes]
+        if len(object_id) != oid_bytes or not name or "/" in name:
+            raise ValueError("invalid tree entry")
+        entries.append((mode, name, object_id.hex()))
+        offset = end + 1 + oid_bytes
+    if len({name for _, name, _ in entries}) != len(entries):
+        raise ValueError("duplicate tree entry")
+    return entries
 
-    # A new release changes its manifest. Keep checking historical versions of
-    # these exact approved paths, rather than accepting only today's hash.
-    large_paths = sorted(set(allowlist.get("large_text_files", {})) & set(allowlist["allowed_files"]))
-    if large_paths:
-        historical = run_git(["rev-list", "--objects", "--all", "--", *large_paths])
-        for line in historical.stdout.decode("utf-8", "strict").splitlines():
-            object_id, separator, relative = line.partition(" ")
-            if not separator or relative not in large_paths:
-                continue
-            data = run_git(["cat-file", "blob", object_id]).stdout
-            if len(data) <= allowlist["large_text_files"][relative] and read_text_or_none(data) is not None:
-                large_text_hashes.add(digest_bytes(data))
 
-    names = run_git(["log", "--all", "--format=", "--name-only"], check=False).stdout.decode("utf-8", "replace")
-    findings.extend(scan_text("historical-paths", names, allowed_emails, allowed_hosts))
-    refs = run_git(["for-each-ref", "--format=%(refname)"], check=False).stdout.decode("utf-8", "replace")
-    findings.extend(scan_text("git-refs", refs, allowed_emails, allowed_hosts))
-
-    remote_output = run_git(["remote", "-v"]).stdout.decode("utf-8", "replace")
-    allowed_remote_urls = set(allowlist.get("allowed_remote_urls", []))
-    for line in remote_output.splitlines():
-        parts = line.split()
-        if len(parts) >= 2 and parts[1] not in allowed_remote_urls:
-            findings.append(f"unapproved Git remote: {parts[0]}")
-
-    log = run_git(
-        ["log", "--all", "--format=%H%x00%an%x00%ae%x00%cn%x00%ce%x00%B%x00"],
-        check=False,
-    ).stdout
-    fields = log.decode("utf-8", "replace").split("\x00")
-    for index in range(0, len(fields) - 5, 6):
-        commit, author_name, author_email, committer_name, committer_email, message = fields[index:index + 6]
-        if commit and (author_name, author_email) not in allowed_identities:
-            findings.append(f"unapproved author identity: {commit[:12]}")
-        if commit and (committer_name, committer_email) not in allowed_identities:
-            findings.append(f"unapproved committer identity: {commit[:12]}")
-        findings.extend(scan_text(f"commit-message@{commit[:12]}", message, allowed_emails, allowed_hosts))
-
-    object_listing = run_git(
-        ["cat-file", "--batch-all-objects", "--batch-check=%(objectname) %(objecttype) %(objectsize)"],
-        check=False,
-    ).stdout.decode("utf-8", "replace")
-    for line in object_listing.splitlines():
-        parts = line.split()
-        if len(parts) != 3:
-            findings.append("Git object inventory is unreadable")
-            continue
-        object_id, object_type, object_size_text = parts
-        try:
-            object_size = int(object_size_text)
-        except ValueError:
-            findings.append(f"Git object size is invalid: {object_id[:12]}")
-            continue
-        if object_size > int(allowlist["max_file_bytes"]):
-            if object_type != "blob":
-                findings.append(f"Git object exceeds size limit: {object_id[:12]}")
-                continue
-            oversized_data = run_git(["cat-file", "-p", object_id]).stdout
-            if digest_bytes(oversized_data) in large_text_hashes:
-                findings.extend(scan_text(f"large-git-object@{object_id[:12]}", oversized_data.decode("utf-8"), allowed_emails, allowed_hosts))
-            elif digest_bytes(oversized_data) not in allowed_binary_hashes:
-                findings.append(f"Git object exceeds size limit: {object_id[:12]}")
-            continue
-        if object_type not in {"blob", "commit", "tag", "tree"}:
-            findings.append(f"unexpected Git object type: {object_type}")
-            continue
-        if object_type == "tree":
-            continue
-        data = run_git(["cat-file", "-p", object_id]).stdout
-        text = read_text_or_none(data)
-        if text is None:
-            if object_type != "blob" or digest_bytes(data) not in allowed_binary_hashes:
-                findings.append(f"binary or non-UTF-8 Git object: {object_id[:12]}")
-        else:
-            findings.extend(scan_text(f"git-object@{object_id[:12]}", text, allowed_emails, allowed_hosts))
-
-    fsck = run_git(["fsck", "--full", "--no-reflogs", "--unreachable"], check=False)
-    if fsck.returncode != 0:
-        findings.append("Git fsck failed")
+def scan_object_identity(label: str, text: str, kind: str, allowed: set[tuple[str, str]]) -> list[str]:
+    findings = []
+    header, separator, _ = text.partition("\n\n")
+    if not separator:
+        return [f"invalid Git object header: {label}"]
+    for role in (("author", "committer") if kind == "commit" else ("tagger",)):
+        values = [line[len(role) + 1:] for line in header.splitlines() if line.startswith(role + " ")]
+        match = re.fullmatch(r"([^<>\n]+) <([^<>\n]+)> -?\d+ [+-]\d{4}", values[0]) if len(values) == 1 else None
+        if match is None or match.groups() not in allowed:
+            findings.append(f"unapproved {role} identity: {label}")
     return findings
+
+
+def _validate_git(allowlist: dict) -> list[str]:
+    findings: list[str] = []
+    allowed = {(item["name"], item["email"]) for item in allowlist["allowed_git_identities"]}
+    emails = {email for _, email in allowed}
+    hosts = set(allowlist["allowed_external_hosts"])
+    binaries = {item["sha256"] for item in allowlist.get("allowed_binary_assets", [])}
+    large_paths = allowlist.get("large_text_files", {})
+    if not set(large_paths) <= set(allowlist["allowed_files"]):
+        return ["large text approval contains unapproved paths"]
+    if run_git(["rev-parse", "--is-shallow-repository"]).stdout.strip() != b"false":
+        return ["complete Git history is required"]
+    oid_bytes = {b"sha1": 20, b"sha256": 32}[run_git(["rev-parse", "--show-object-format"]).stdout.strip()]
+    refs = run_git(["for-each-ref", "--format=%(refname)"]).stdout.decode("utf-8", "strict")
+    findings.extend(scan_text("git-refs", refs, emails, hosts))
+    if "refs/replace/" in refs:
+        findings.append("Git replacement refs are prohibited")
+    for line in run_git(["remote", "-v"]).stdout.decode("utf-8", "strict").splitlines():
+        fields = line.split()
+        if len(fields) != 3 or fields[1] not in set(allowlist.get("allowed_remote_urls", [])):
+            findings.append("unapproved Git remote")
+
+    # Enumerate reachable AND detached/otherwise unreachable objects. Every
+    # inventory/read failure rejects the release, never an empty-success scan.
+    inventory_args = ["cat-file", "--batch-all-objects", "--batch-check=%(objectname) %(objecttype) %(objectsize)"]
+    inventory = run_git(inventory_args).stdout
+    objects = {}
+    for line in inventory.decode("ascii", "strict").splitlines():
+        object_id, kind, size_text = line.split()
+        size = int(size_text)
+        if not re.fullmatch(r"[0-9a-f]{" + str(oid_bytes * 2) + "}", object_id) or kind not in {"blob", "tree", "commit", "tag"} or size < 0 or object_id in objects:
+            raise ValueError("invalid inventory")
+        objects[object_id] = (kind, size)
+    if not objects or len(objects) > 100000 or sum(size for _, size in objects.values()) > 1024 * 1024 * 1024:
+        return ["Git object inventory is empty or exceeds inspection bounds"]
+    max_size = max([int(allowlist["max_file_bytes"]), *large_paths.values(),
+                    *[item["bytes"] for item in allowlist.get("allowed_binary_assets", [])]])
+    if any(size > max_size for _, size in objects.values()):
+        return ["Git object exceeds inspection size limit"]
+
+    trees = {}
+    texts = {}
+    binary_ids = set()
+    roots = set()
+    ids = list(objects)
+    # Small batches avoid thousands of subprocesses and do not persist raw
+    # history or rejected content in temporary files or Actions artifacts.
+    for start in range(0, len(ids), 64):
+        batch = ids[start:start + 64]
+        output = run_git(["cat-file", "--batch"], input_bytes=("\n".join(batch) + "\n").encode()).stdout
+        offset = 0
+        for object_id in batch:
+            kind, size = objects[object_id]
+            end = output.index(b"\n", offset)
+            if output[offset:end] != f"{object_id} {kind} {size}".encode():
+                raise ValueError("object read mismatch")
+            data = output[end + 1:end + 1 + size]
+            offset = end + 1 + size
+            if len(data) != size or output[offset:offset + 1] != b"\n":
+                raise ValueError("truncated object")
+            offset += 1
+            label = f"git-object@{object_id[:12]}"
+            if kind == "tree":
+                trees[object_id] = parse_tree(data, oid_bytes)
+                for mode, name, child in trees[object_id]:
+                    findings.extend(scan_path(label, name, emails, hosts))
+                    expected = "tree" if mode == "40000" else "blob"
+                    if mode not in {"40000", "100644"}:
+                        findings.append(f"prohibited Git tree mode: {label}")
+                    if child not in objects or objects[child][0] != expected:
+                        findings.append(f"missing or invalid Git tree child: {label}")
+            else:
+                text = read_text_or_none(data)
+                if text is None:
+                    if kind != "blob" or digest_bytes(data) not in binaries:
+                        findings.append(f"binary or non-UTF-8 Git object: {label}")
+                    else:
+                        binary_ids.add(object_id)
+                else:
+                    findings.extend(scan_text(label, text, emails, hosts))
+                    if kind == "blob":
+                        texts[object_id] = text
+                    else:
+                        findings.extend(scan_object_identity(label, text, kind, allowed))
+                        if kind == "commit":
+                            root = text.splitlines()[0].removeprefix("tree ")
+                            if root not in objects or objects[root][0] != "tree":
+                                findings.append(f"missing commit tree: {label}")
+                            else:
+                                roots.add(root)
+        if offset != len(output):
+            raise ValueError("unexpected object batch suffix")
+
+    # Walk commit roots and detached trees. Recover complete, raw paths for
+    # browser-API checks, nested names and exact-path large-text approvals.
+    child_trees = {child for entries in trees.values() for mode, _, child in entries if mode == "40000"}
+    roots.update(set(trees) - child_trees)
+    pending = [(root, "") for root in roots]
+    seen = set()
+    blob_paths = {}
+    while pending:
+        tree, prefix = pending.pop()
+        if (tree, prefix) in seen:
+            continue
+        seen.add((tree, prefix))
+        if len(seen) > 200000 or prefix.count("/") > 64:
+            return findings + ["Git tree traversal exceeds inspection bounds"]
+        for mode, name, child in trees.get(tree, []):
+            relative = prefix + name
+            label = f"git-path@{digest_bytes(relative.encode())[:12]}"
+            findings.extend(scan_path(label, relative, emails, hosts))
+            if mode == "40000":
+                pending.append((child, relative + "/"))
+            else:
+                blob_paths.setdefault(child, set()).add(relative)
+    if set(trees) - {tree for tree, _ in seen}:
+        findings.append("Git tree coverage is incomplete")
+    for object_id, (kind, size) in objects.items():
+        label = f"git-object@{object_id[:12]}"
+        paths = blob_paths.get(object_id, set())
+        if size > int(allowlist["max_file_bytes"]) and object_id not in binary_ids:
+            if kind != "blob" or not paths or any(size > large_paths.get(path, 0) for path in paths):
+                findings.append(f"Git object exceeds approved path size: {label}")
+        if object_id in texts:
+            # A standalone text blob has no trustworthy extension: apply the
+            # browser checks conservatively until it has a known file path.
+            suffixes = {Path(path).suffix.lower() for path in paths} if paths else {".js"}
+            for suffix in suffixes & {".html", ".js", ".mjs", ".svg"}:
+                findings.extend(scan_text(f"object{suffix}@{object_id[:12]}", texts[object_id], emails, hosts))
+    run_git(["fsck", "--full", "--strict", "--no-reflogs"])
+    if run_git(inventory_args).stdout != inventory:
+        findings.append("Git object inventory changed during inspection")
+    return findings
+
+
+def validate_git(allowlist: dict) -> list[str]:
+    try:
+        return _validate_git(allowlist)
+    except (OSError, subprocess.SubprocessError, UnicodeError, ValueError, KeyError, IndexError, TypeError):
+        # Never echo command output, malformed identity, path or secret value.
+        return ["Git inspection could not be completed; release blocked"]
 
 
 def main() -> int:
     try:
         allowlist = json.loads(ALLOWLIST_PATH.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as error:
-        print(f"PRIVACY_GATE_FAILED allowlist unreadable: {error}", file=sys.stderr)
+    except (OSError, json.JSONDecodeError):
+        print("PRIVACY_GATE_FAILED allowlist unreadable", file=sys.stderr)
         return 1
 
     findings = []
-    findings.extend(validate_worktree(allowlist))
-    findings.extend(validate_manifest(allowlist))
-    findings.extend(validate_workflow(allowlist))
-    findings.extend(validate_git(allowlist))
+    try:
+        findings.extend(validate_worktree(allowlist))
+        findings.extend(validate_manifest(allowlist))
+        findings.extend(validate_workflow(allowlist))
+        findings.extend(validate_git(allowlist))
+    except (OSError, ValueError, TypeError, KeyError, AttributeError):
+        findings.append("release inspection could not be completed; release blocked")
     findings = sorted(set(findings))
     if findings:
         print(f"PRIVACY_GATE_FAILED findings={len(findings)}", file=sys.stderr)

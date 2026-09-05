@@ -75,7 +75,8 @@ class PagesReleaseTests(unittest.TestCase):
             (root / "publication-block-test.txt").touch()
             with patch.object(gate, "ROOT", root):
                 findings = gate.validate_worktree(allowlist)
-            self.assertTrue(any("not allowlisted" in item and "publication-block-test.txt" in item for item in findings))
+            probe_label = "file@" + gate.digest_bytes(b"publication-block-test.txt")[:12]
+            self.assertTrue(any("not allowlisted" in item and probe_label in item for item in findings))
 
     def test_workflow_dependencies(self):
         workflow = (gate.ROOT / ".github/workflows/privacy-gate.yml").read_text()

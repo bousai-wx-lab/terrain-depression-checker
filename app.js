@@ -226,6 +226,7 @@ function getMapTile(layer, zoom, x, y) {
   if (entry) return entry;
   const image = new Image();
   image.crossOrigin = "anonymous";
+  image.referrerPolicy = "no-referrer";
   image.decoding = "async";
   entry = { image, status: "loading" };
   state.mapTiles.set(url, entry);
@@ -454,7 +455,7 @@ function resolutionLabel(meters) {
   return `約${meters.toFixed(1)}m/画素`;
 }
 
-const analysisWorker = new Worker("./analysis-worker.js?v=20260905-6", { type: "module" });
+const analysisWorker = new Worker("./analysis-worker.js?v=20260905-7", { type: "module", credentials: "omit" });
 
 function analysisMessage(result) {
   return `円内の陸地平均・集計格子${resolutionLabel(result.sourceResolution).replace("/画素", "")}・${(result.elapsedMs / 1000).toFixed(2)}秒`;

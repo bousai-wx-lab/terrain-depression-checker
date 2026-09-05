@@ -2,7 +2,7 @@ import { decodeElevationRgb, lonLatToWorldPixel, worldPixelToLonLat, metersPerPi
 import { chooseAreaPlan, allocatePrefix, finishPrefix, calculateAreaRow, queryDisk, diskRows,
   gridPositions, positionInsideAnalysis } from './area.js';
 
-const RELEASE = '20260905-6';
+const RELEASE = '20260905-7';
 const GSI = 'https://cyberjapandata.gsi.go.jp/xyz';
 const SOURCES = [['dem1a_png',17],['dem5a_png',15],['dem5b_png',15],['dem5c_png',15],['dem_png',14]];
 const cache = new Map();
@@ -29,7 +29,7 @@ function cached(key, factory) {
 
 async function index() {
   if (!indexPromise) indexPromise = (async () => {
-    const response = await fetch(`./data/area-index.json?v=${RELEASE}`, {signal:AbortSignal.timeout(20000)});
+    const response = await fetch(`./data/area-index.json?v=${RELEASE}`, {credentials:'omit',referrerPolicy:'no-referrer',redirect:'error',signal:AbortSignal.timeout(20000)});
     if (!response.ok) throw Error('集計データの一覧を取得できませんでした');
     const value = await response.json();
     if (value.version !== 1 || value.tile_size !== 128 || !value.global_tiles) throw Error('集計データの版が一致しません');
@@ -43,7 +43,7 @@ async function summary(kind,z,x,y) {
   const record = manifest[kind === 'area' ? 'tiles' : 'global_tiles'][key];
   if (!record) return null; // Enumerated empty tile, not an HTTP failure.
   return cached(`${kind}/${key}`,async () => {
-    const response = await fetch(`./data/${kind}-v1/${key}.json.gz?h=${record.sha256.slice(0,16)}`, {signal:AbortSignal.timeout(20000)});
+    const response = await fetch(`./data/${kind}-v1/${key}.json.gz?h=${record.sha256.slice(0,16)}`, {credentials:'omit',referrerPolicy:'no-referrer',redirect:'error',signal:AbortSignal.timeout(20000)});
     if (!response.ok) throw Error('集計データを取得できませんでした');
     const bytes = await response.arrayBuffer();
     if(bytes.byteLength!==record.bytes)throw Error('集計データのサイズが一致しません');
@@ -63,7 +63,7 @@ async function summary(kind,z,x,y) {
 
 async function providerTile(source,z,x,y) {
   return cached(`${source}/${z}/${x}/${y}`,async () => {
-    const response = await fetch(`${GSI}/${source}/${z}/${x}/${y}.png`,{credentials:'omit',referrerPolicy:'no-referrer',signal:AbortSignal.timeout(20000)});
+    const response = await fetch(`${GSI}/${source}/${z}/${x}/${y}.png`,{credentials:'omit',referrerPolicy:'no-referrer',redirect:'error',signal:AbortSignal.timeout(20000)});
     if(response.status===404)return {values:null,bytes:32};
     if(!response.ok)throw Error('標高データを取得できませんでした');
     const blob=await response.blob();
