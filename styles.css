@@ -987,6 +987,7 @@ dd {
     color: #fff;
     font-size: 11px;
     font-weight: 850;
+    white-space: nowrap;
     cursor: pointer;
   }
 
@@ -1434,6 +1435,31 @@ dd {
     left: 8px;
     max-width: calc(100% - 150px);
     transform: none;
+  }
+}
+
+@media (max-width: 360px) {
+  .topbar-inner {
+    gap: 4px;
+  }
+
+  .header-identity {
+    gap: 3px;
+  }
+
+  .title-row {
+    padding-left: 4px;
+  }
+
+  h1 {
+    font-size: 12px;
+    line-height: 1.15;
+  }
+
+  .mobile-settings-button,
+  .mobile-more-button {
+    padding: 4px;
+    font-size: 10px;
   }
 }
 
