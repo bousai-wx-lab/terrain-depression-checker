@@ -6,7 +6,7 @@
     <meta name="referrer" content="no-referrer" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'none'; base-uri 'none'; object-src 'none'; frame-src 'none'; script-src 'self'; script-src-attr 'none'; worker-src 'self'; style-src 'self'; style-src-attr 'none'; img-src 'self' data: blob: https://cyberjapandata.gsi.go.jp; connect-src 'self' https://cyberjapandata.gsi.go.jp; form-action 'none'; upgrade-insecure-requests"
+      content="default-src 'none'; base-uri 'none'; object-src 'none'; frame-src 'none'; script-src 'self'; script-src-elem 'self' https://www.googletagmanager.com; script-src-attr 'none'; worker-src 'self'; style-src 'self'; style-src-attr 'none'; img-src 'self' data: blob: https://cyberjapandata.gsi.go.jp https://*.google-analytics.com https://www.googletagmanager.com; connect-src 'self' https://cyberjapandata.gsi.go.jp https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; form-action 'none'; upgrade-insecure-requests"
     />
     <meta
       name="description"
@@ -32,7 +32,7 @@
     <meta name="twitter:image:alt" content="周囲より低い地形チェッカーの機能と地図表示を紹介するBousai Wx Labのカード画像" />
     <link rel="icon" type="image/png" href="./assets/bousaiwxlab-site-icon.png" />
     <title>周囲より低い地形チェッカー | Bousai Wx Lab</title>
-    <link rel="stylesheet" href="./styles.css?v=20260905-8" />
+    <link rel="stylesheet" href="./styles.css?v=20260905-9" />
   </head>
   <body>
     <header class="topbar">
@@ -209,7 +209,9 @@
 
         <details class="privacy-note">
           <summary>プライバシーと通信</summary>
-          <p>現在地の自動取得、住所入力、独自のアクセス解析は行いません。アプリ自身はCookieやWeb Storageに地点・設定を記録しません。地図・標高タイルは国土地理院から、事前集計データはこのサイトから取得するため、通信先にはIPアドレスと要求したデータのURLが伝わり、URLから表示地域を推測できる場合があります。</p>
+          <p>現在地の自動取得と住所入力は行いません。アクセス人数を把握するため、許可された場合だけGoogle Analyticsを読み込みます。共有URLに含まれる地図中心・選択地点・表示設定は送らず、クエリを除いたこのツールのページURL、閲覧日時、端末・ブラウザに関する一般的な情報などがGoogleへ送信されます。広告用の計測とパーソナライズは無効です。</p>
+          <p>選択内容はこのサイトのWeb Storageへ保存します。許可後はGoogle Analyticsが解析Cookieを使用する場合があります。Google Analyticsと各通信先には、通信に必要なIPアドレスが伝わります。拒否してもツールの全機能を利用でき、後から設定を変更できます。詳しくは<a href="https://bousai-wx-lab.com/privacy-policy/" target="_blank" rel="noopener noreferrer">Bousai Wx Labのプライバシーポリシー</a>をご確認ください。</p>
+          <p><button id="analyticsSettingsButton" class="analytics-settings-button" type="button">アクセス解析の設定</button></p>
           <p>「リンク取得」は表示中心・選択地点の座標と表示設定をURLに含め、端末のクリップボードへコピーします。そのURLを開くと座標を含むURLがこのサイトの配信元（GitHub Pages）へ送られ、ブラウザ履歴や配信元の通信記録に残る可能性があります。クリップボード・履歴の同期や、共有先での保存にも注意し、個人宅などを共有する前にURLの内容を確認してください。</p>
           <p>解析とPNG作成はブラウザ内で行い、作成したPNGをアプリが外部へアップロードすることはありません。PNG保存は端末へのダウンロードです。ブラウザの通常のキャッシュや配信元の記録まで無効にするものではありません。ブログとXにはリンクを押した時だけ移動します。</p>
         </details>
@@ -269,7 +271,19 @@
       <p>標高データの欠測、水部、構造物、測量時期、解像度、計算方法により、実際の排水や浸水状況とは異なります。本ツールは国土地理院・気象庁の公式サービスではありません。</p>
     </footer>
 
+    <section id="analyticsConsentPanel" class="analytics-consent" role="dialog" aria-modal="false" aria-labelledby="analyticsConsentTitle" aria-describedby="analyticsConsentDescription" hidden>
+      <div>
+        <strong id="analyticsConsentTitle">アクセス解析について</strong>
+        <p id="analyticsConsentDescription">アクセス人数を把握するため、許可された場合だけGoogle Analyticsを使用します。共有URLの座標や表示設定は送信しません。拒否してもツールを利用できます。</p>
+      </div>
+      <div class="analytics-consent-actions">
+        <button id="analyticsDeclineButton" type="button">許可しない</button>
+        <button id="analyticsAcceptButton" class="analytics-accept" type="button">許可する</button>
+      </div>
+    </section>
+
     <noscript>このツールの利用にはJavaScriptが必要です。</noscript>
+    <script type="module" src="./analytics-consent.js?v=20260905-1" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script type="module" src="./app.js?v=20260905-9" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   </body>
 </html>

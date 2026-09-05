@@ -103,7 +103,15 @@ def run_git(arguments: list[str], *, check: bool = True, input_bytes: bytes | No
     )
 
 
-def scan_text(path_label: str, text: str, allowed_emails: set[str], allowed_hosts: set[str]) -> list[str]:
+def scan_text(
+    path_label: str,
+    text: str,
+    allowed_emails: set[str],
+    allowed_hosts: set[str],
+    allowed_browser_api_fragments: dict[str, dict[str, list[str]]] | None = None,
+    *,
+    scan_browser_apis: bool = True,
+) -> list[str]:
     findings: list[str] = []
     for pattern in LOCAL_PATH_PATTERNS:
         if pattern.search(text):
@@ -128,9 +136,13 @@ def scan_text(path_label: str, text: str, allowed_emails: set[str], allowed_host
         if host and host not in allowed_hosts:
             findings.append(f"unapproved external host: {path_label}")
     suffix = Path(path_label.split("@", 1)[0]).suffix.lower()
-    if suffix in {".html", ".js", ".mjs", ".svg"}:
+    if scan_browser_apis and suffix in {".html", ".js", ".mjs", ".svg"}:
+        path_allowances = (allowed_browser_api_fragments or {}).get(path_label, {})
         for token in DANGEROUS_BROWSER_TOKENS:
-            if token in text:
+            remaining = text
+            for approved_fragment in path_allowances.get(token, []):
+                remaining = remaining.replace(approved_fragment, "")
+            if token in remaining:
                 findings.append(f"dangerous browser API {token}: {path_label}")
     return findings
 
@@ -253,6 +265,7 @@ def validate_worktree(allowlist: dict) -> list[str]:
     allowed_files = set(allowlist["allowed_files"])
     allowed_emails = {item["email"] for item in allowlist["allowed_git_identities"]}
     allowed_hosts = {host.lower() for host in allowlist["allowed_external_hosts"]}
+    browser_allowances = allowlist.get("allowed_browser_api_fragments", {})
     binary_assets = {item["path"]: item for item in allowlist.get("allowed_binary_assets", [])}
     actual_files: set[str] = set()
 
@@ -261,6 +274,8 @@ def validate_worktree(allowlist: dict) -> list[str]:
     for binary_path in binary_assets:
         if binary_path not in allowed_files:
             findings.append(f"binary asset is not in allowed_files: {binary_path}")
+    if not isinstance(browser_allowances, dict) or any(path not in allowed_files for path in browser_allowances):
+        findings.append("browser API allowance contains an unapproved path")
 
     for path in ROOT.rglob("*"):
         relative = path.relative_to(ROOT)
@@ -302,7 +317,7 @@ def validate_worktree(allowlist: dict) -> list[str]:
         else:
             if relative_text in binary_assets:
                 findings.append(f"configured binary asset is text: {relative_text}")
-            findings.extend(scan_text(relative_text, text, allowed_emails, allowed_hosts))
+            findings.extend(scan_text(relative_text, text, allowed_emails, allowed_hosts, browser_allowances))
 
     for missing in sorted(allowed_files - actual_files):
         findings.append(f"allowlisted file is missing: {missing}")
@@ -400,6 +415,7 @@ def _validate_git(allowlist: dict) -> list[str]:
     allowed = {(item["name"], item["email"]) for item in allowlist["allowed_git_identities"]}
     emails = {email for _, email in allowed}
     hosts = set(allowlist["allowed_external_hosts"])
+    browser_allowances = allowlist.get("allowed_browser_api_fragments", {})
     current_binary_records = {
         item["sha256"]: item for item in allowlist.get("allowed_binary_assets", [])
     }
@@ -493,7 +509,7 @@ def _validate_git(allowlist: dict) -> list[str]:
                         record = binary_records[digest]
                         findings.extend(validate_binary_asset(record["path"], data, record))
                 else:
-                    findings.extend(scan_text(label, text, emails, hosts))
+                    findings.extend(scan_text(label, text, emails, hosts, scan_browser_apis=kind != "blob"))
                     if kind == "blob":
                         texts[object_id] = text
                     else:
@@ -545,9 +561,12 @@ def _validate_git(allowlist: dict) -> list[str]:
         if object_id in texts:
             # A standalone text blob has no trustworthy extension: apply the
             # browser checks conservatively until it has a known file path.
-            suffixes = {Path(path).suffix.lower() for path in paths} if paths else {".js"}
-            for suffix in suffixes & {".html", ".js", ".mjs", ".svg"}:
-                findings.extend(scan_text(f"object{suffix}@{object_id[:12]}", texts[object_id], emails, hosts))
+            if paths:
+                for path in paths:
+                    if Path(path).suffix.lower() in {".html", ".js", ".mjs", ".svg"}:
+                        findings.extend(scan_text(path, texts[object_id], emails, hosts, browser_allowances))
+            else:
+                findings.extend(scan_text(f"object.js@{object_id[:12]}", texts[object_id], emails, hosts))
     run_git(["fsck", "--full", "--strict", "--no-reflogs"])
     if run_git(inventory_args).stdout != inventory:
         findings.append("Git object inventory changed during inspection")

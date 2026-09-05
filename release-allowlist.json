@@ -8,6 +8,7 @@
     "README.md",
     "SECURITY.md",
     "analysis-worker.js",
+    "analytics-consent.js",
     "app.js",
     "area.js",
     "interaction.js",
@@ -5621,11 +5622,14 @@
     "styles.css",
     "terrain.js",
     "tests/area.test.mjs",
+    "tests/analytics.test.mjs",
     "tests/display-contract.test.mjs",
     "tests/mobile-interaction.test.mjs",
     "tests/terrain.test.mjs"
   ],
   "allowed_external_hosts": [
+    "*.analytics.google.com",
+    "*.google-analytics.com",
     "127.0.0.1",
     "about.x.com",
     "bousai-wx-lab.com",
@@ -5635,8 +5639,17 @@
     "github.com",
     "localhost",
     "maps.gsi.go.jp",
+    "www.googletagmanager.com",
     "x.com"
   ],
+  "allowed_browser_api_fragments": {
+    "analytics-consent.js": {
+      "localStorage": [
+        "window.localStorage.getItem(CONSENT_STORAGE_KEY)",
+        "window.localStorage.setItem(CONSENT_STORAGE_KEY, value)"
+      ]
+    }
+  },
   "allowed_binary_assets": [
     {
       "path": "assets/bousaiwxlab-site-icon.png",
