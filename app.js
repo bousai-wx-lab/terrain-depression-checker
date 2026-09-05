@@ -3,6 +3,7 @@ import {
   lonLatToWorldPixel, metersPerPixel, parseShareState, scaleBarSpec,
   serializeShareState, tileSourceZoom, worldPixelToLonLat,
 } from "./terrain.js?v=20260905-6";
+import { beginPinchGesture, pinchZoomFromStart, pointerPairMetrics } from "./interaction.js?v=20260905-1";
 const GSI_ORIGIN = "https://cyberjapandata.gsi.go.jp";
 
 const INITIAL_VIEW = Object.freeze({ longitude: 139.767, latitude: 35.681, zoom: 14 });
@@ -46,7 +47,21 @@ const elements = {
   download: document.querySelector("#downloadButton"),
   downloadLabel: document.querySelector("#downloadLabel"),
   shareStatus: document.querySelector("#shareActionStatus"),
+  topbar: document.querySelector(".topbar"),
+  settingsButton: document.querySelector("#settingsButton"),
+  settingsPanel: document.querySelector("#settingsPanel"),
+  settingsClose: document.querySelector("#settingsCloseButton"),
+  settingsBackdrop: document.querySelector("#settingsBackdrop"),
+  moreButton: document.querySelector("#moreButton"),
+  headerActions: document.querySelector("#headerActions"),
+  legendButton: document.querySelector("#legendButton"),
+  legend: document.querySelector("#mapLegend"),
+  mobilePointSummary: document.querySelector("#mobilePointSummary"),
+  mobilePointSummaryValue: document.querySelector("#mobilePointSummaryValue"),
+  pointHeading: document.querySelector("#pointHeading"),
 };
+
+const mobileLayout = window.matchMedia("(max-width: 820px), (max-width: 900px) and (max-height: 520px)");
 
 const context = elements.canvas.getContext("2d", { alpha: false });
 const state = {
@@ -65,8 +80,120 @@ const state = {
   gesture: null,
   moved: false,
   downPoint: null,
+  hadMultiplePointers: false,
   selectedPoint: null,
+  settingsReturnFocus: null,
 };
+
+function setElementInert(element, inert) {
+  if (inert) element.setAttribute("inert", "");
+  else element.removeAttribute("inert");
+}
+
+function closeHeaderActions({ restoreFocus = false } = {}) {
+  if (!mobileLayout.matches) return;
+  if (elements.headerActions.contains(document.activeElement)) elements.moreButton.focus();
+  elements.headerActions.classList.remove("is-open");
+  elements.moreButton.setAttribute("aria-expanded", "false");
+  elements.headerActions.setAttribute("aria-hidden", "true");
+  setElementInert(elements.headerActions, true);
+  if (restoreFocus) elements.moreButton.focus();
+}
+
+function toggleHeaderActions() {
+  if (!mobileLayout.matches) return;
+  const willOpen = !elements.headerActions.classList.contains("is-open");
+  elements.headerActions.classList.toggle("is-open", willOpen);
+  elements.moreButton.setAttribute("aria-expanded", String(willOpen));
+  elements.headerActions.setAttribute("aria-hidden", String(!willOpen));
+  setElementInert(elements.headerActions, !willOpen);
+  if (willOpen) elements.headerActions.querySelector("button, a")?.focus();
+}
+
+function closeSettings({ restoreFocus = true } = {}) {
+  if (!mobileLayout.matches) return;
+  const wasOpen = elements.settingsPanel.classList.contains("is-open");
+  elements.settingsPanel.classList.remove("is-open");
+  elements.settingsBackdrop.classList.remove("is-open");
+  elements.settingsButton.setAttribute("aria-expanded", "false");
+  elements.settingsPanel.setAttribute("aria-hidden", "true");
+  setElementInert(elements.settingsPanel, true);
+  document.body.classList.remove("settings-open");
+  if (wasOpen && restoreFocus) {
+    const target = state.settingsReturnFocus?.isConnected ? state.settingsReturnFocus : elements.settingsButton;
+    target.focus();
+  }
+  state.settingsReturnFocus = null;
+}
+
+function openSettings(focusTarget = elements.settingsClose) {
+  if (!mobileLayout.matches) return;
+  closeHeaderActions();
+  cancelAllPointers();
+  state.settingsReturnFocus = elements.settingsButton;
+  elements.settingsPanel.classList.add("is-open");
+  elements.settingsBackdrop.classList.add("is-open");
+  elements.settingsButton.setAttribute("aria-expanded", "true");
+  elements.settingsPanel.setAttribute("aria-hidden", "false");
+  setElementInert(elements.settingsPanel, false);
+  document.body.classList.add("settings-open");
+  window.requestAnimationFrame(() => {
+    focusTarget.focus();
+    if (focusTarget === elements.pointHeading) focusTarget.scrollIntoView({ block: "start" });
+  });
+}
+
+function focusableSettingsElements() {
+  return [...elements.settingsPanel.querySelectorAll("button, select, input, summary, a[href], [tabindex]")]
+    .filter((element) => !element.hasAttribute("disabled") && element.getAttribute("tabindex") !== "-1");
+}
+
+function syncResponsiveAccessibility() {
+  if (mobileLayout.matches) {
+    elements.settingsPanel.setAttribute("role", "dialog");
+    elements.settingsPanel.setAttribute("aria-modal", "true");
+    elements.settingsPanel.setAttribute("aria-labelledby", "settingsPanelTitle");
+    if (!elements.settingsPanel.classList.contains("is-open")) {
+      elements.settingsPanel.setAttribute("aria-hidden", "true");
+      setElementInert(elements.settingsPanel, true);
+    }
+    if (!elements.headerActions.classList.contains("is-open")) {
+      elements.headerActions.setAttribute("aria-hidden", "true");
+      setElementInert(elements.headerActions, true);
+    }
+    elements.legend.setAttribute("aria-hidden", String(!elements.legend.classList.contains("is-open")));
+  } else {
+    elements.settingsPanel.classList.remove("is-open");
+    elements.settingsBackdrop.classList.remove("is-open");
+    elements.settingsPanel.removeAttribute("role");
+    elements.settingsPanel.removeAttribute("aria-modal");
+    elements.settingsPanel.removeAttribute("aria-labelledby");
+    elements.settingsPanel.removeAttribute("aria-hidden");
+    setElementInert(elements.settingsPanel, false);
+    elements.settingsButton.setAttribute("aria-expanded", "false");
+    elements.headerActions.classList.remove("is-open");
+    elements.headerActions.removeAttribute("aria-hidden");
+    setElementInert(elements.headerActions, false);
+    elements.moreButton.setAttribute("aria-expanded", "false");
+    elements.legend.classList.remove("is-open");
+    elements.legend.removeAttribute("aria-hidden");
+    elements.legendButton.setAttribute("aria-expanded", "false");
+    document.body.classList.remove("settings-open");
+  }
+}
+
+let viewportFrame = 0;
+function scheduleViewportSync() {
+  if (viewportFrame) return;
+  viewportFrame = window.requestAnimationFrame(() => {
+    viewportFrame = 0;
+    const visualHeight = window.visualViewport?.height;
+    const viewportHeight = Number.isFinite(visualHeight) ? visualHeight : window.innerHeight;
+    const headerHeight = elements.topbar.getBoundingClientRect().height;
+    document.documentElement.style.setProperty("--mobile-viewport-height", `${Math.round(viewportHeight)}px`);
+    document.documentElement.style.setProperty("--mobile-header-height", `${Math.ceil(headerHeight)}px`);
+  });
+}
 
 function canvasCssSize() {
   const rect = elements.canvas.getBoundingClientRect();
@@ -537,6 +664,8 @@ function requestSelectedPoint() {
   elements.elevation.textContent = "計算中";
   elements.surrounding.textContent = "計算中";
   elements.depth.textContent = "計算中";
+  elements.mobilePointSummary.hidden = false;
+  elements.mobilePointSummaryValue.textContent = "標高差を計算中";
   analysisWorker.postMessage({ type: "point", pointId, analysisId: state.analysisSequence, position: state.selectedPoint });
 }
 
@@ -547,6 +676,7 @@ function clearPointReadout({ clearSelection = false } = {}) {
   elements.depth.textContent = "--";
   elements.coordinate.textContent = "地図をクリックまたはタップ";
   elements.tooltip.hidden = true;
+  elements.mobilePointSummary.hidden = true;
 }
 
 function updatePointReadout(position, value) {
@@ -554,6 +684,10 @@ function updatePointReadout(position, value) {
   elements.elevation.textContent = value ? formatMeters(value.elevation) : "データなし";
   elements.surrounding.textContent = value ? formatMeters(value.surrounding) : "データなし";
   elements.depth.textContent = value ? formatMeters(value.elevationDifference, true) : "データなし";
+  elements.mobilePointSummary.hidden = false;
+  elements.mobilePointSummaryValue.textContent = value
+    ? `標高差 ${formatMeters(value.elevationDifference, true)}`
+    : "選択地点：データなし";
 }
 
 function lonLatToCss(position) {
@@ -602,25 +736,26 @@ function updateTooltip(event) {
 }
 
 function pointerMetrics() {
-  const points = [...state.pointers.values()];
-  if (points.length < 2) return null;
-  const [first, second] = points;
-  return {
-    distance: Math.hypot(second.x - first.x, second.y - first.y),
-    x: (first.x + second.x) / 2,
-    y: (first.y + second.y) / 2,
-  };
+  return pointerPairMetrics(state.pointers.values());
 }
 
 elements.canvas.addEventListener("pointerdown", (event) => {
   if (event.button !== 0 && event.pointerType === "mouse") return;
   event.preventDefault();
   const point = cssPoint(event);
+  const startsGesture = state.pointers.size === 0;
   state.pointers.set(event.pointerId, point);
   elements.canvas.setPointerCapture?.(event.pointerId);
-  state.moved = false;
-  state.downPoint = point;
-  state.gesture = state.pointers.size >= 2 ? pointerMetrics() : point;
+  if (startsGesture) {
+    state.moved = false;
+    state.hadMultiplePointers = false;
+    state.downPoint = point;
+    state.gesture = point;
+  } else if (state.pointers.size >= 2) {
+    state.moved = true;
+    state.hadMultiplePointers = true;
+    state.gesture = beginPinchGesture(pointerMetrics(), state.zoom);
+  }
   elements.canvasWrap.classList.add("dragging");
   elements.tooltip.hidden = true;
 });
@@ -636,20 +771,17 @@ elements.canvas.addEventListener("pointermove", (event) => {
 
   if (state.pointers.size >= 2) {
     const current = pointerMetrics();
-    const previous = state.gesture;
-    if (current && previous && Number.isFinite(previous.distance)) {
-      panBy(current.x - previous.x, current.y - previous.y);
-      const ratio = previous.distance > 0 ? current.distance / previous.distance : 1;
-      if (ratio > 1.18) {
-        setZoom(state.zoom + 1, current.x, current.y);
-        current.distance = current.distance / ratio;
-      } else if (ratio < 0.84) {
-        setZoom(state.zoom - 1, current.x, current.y);
-        current.distance = current.distance / ratio;
-      }
+    let gesture = state.gesture;
+    if (current && (!gesture || gesture.kind !== "pinch")) {
+      gesture = beginPinchGesture(current, state.zoom);
+    }
+    if (current && gesture) {
+      panBy(current.x - gesture.x, current.y - gesture.y);
+      const nextZoom = pinchZoomFromStart(gesture, current, MIN_ZOOM, MAX_ZOOM);
+      if (nextZoom !== null && nextZoom !== state.zoom) setZoom(nextZoom, current.x, current.y);
+      state.gesture = { ...gesture, x: current.x, y: current.y };
       state.moved = true;
     }
-    state.gesture = current;
     return;
   }
 
@@ -663,18 +795,23 @@ elements.canvas.addEventListener("pointermove", (event) => {
   state.gesture = point;
 });
 
-function finishPointer(event) {
+function finishPointer(event, { cancelled = false, releaseCapture = true } = {}) {
   if (!state.pointers.has(event.pointerId)) return;
   event.preventDefault();
   const point = state.pointers.get(event.pointerId);
-  const wasTap = state.pointers.size === 1 && !state.moved && point;
+  const wasTap = !cancelled && state.pointers.size === 1 && !state.moved && !state.hadMultiplePointers && point;
   state.pointers.delete(event.pointerId);
-  try {
-    elements.canvas.releasePointerCapture?.(event.pointerId);
-  } catch {
-    // Pointer capture can already be released by the browser.
+  if (releaseCapture) {
+    try {
+      elements.canvas.releasePointerCapture?.(event.pointerId);
+    } catch {
+      // Pointer capture can already be released by the browser.
+    }
   }
-  if (state.pointers.size === 1) {
+  if (state.pointers.size >= 2) {
+    state.gesture = beginPinchGesture(pointerMetrics(), state.zoom);
+    state.moved = true;
+  } else if (state.pointers.size === 1) {
     state.gesture = [...state.pointers.values()][0];
     state.moved = true;
   } else if (state.pointers.size === 0) {
@@ -683,11 +820,14 @@ function finishPointer(event) {
     elements.canvasWrap.classList.remove("dragging");
     if (wasTap) selectPoint(point.x, point.y);
     else scheduleAnalysis();
+    state.moved = false;
+    state.hadMultiplePointers = false;
   }
 }
 
 elements.canvas.addEventListener("pointerup", finishPointer);
-elements.canvas.addEventListener("pointercancel", finishPointer);
+elements.canvas.addEventListener("pointercancel", (event) => finishPointer(event, { cancelled: true }));
+elements.canvas.addEventListener("lostpointercapture", (event) => finishPointer(event, { cancelled: true, releaseCapture: false }));
 elements.canvas.addEventListener("pointerleave", (event) => {
   if (!state.pointers.has(event.pointerId)) elements.tooltip.hidden = true;
 });
@@ -697,6 +837,26 @@ elements.canvas.addEventListener("wheel", (event) => {
   const point = cssPoint(event);
   setZoom(state.zoom + (event.deltaY < 0 ? 1 : -1), point.x, point.y);
 }, { passive: false });
+
+function cancelAllPointers() {
+  if (!state.pointers.size) return;
+  const pointerIds = [...state.pointers.keys()];
+  state.pointers.clear();
+  for (const pointerId of pointerIds) {
+    try {
+      elements.canvas.releasePointerCapture?.(pointerId);
+    } catch {
+      // Pointer capture can already be released by the browser.
+    }
+  }
+  state.gesture = null;
+  state.downPoint = null;
+  state.moved = false;
+  state.hadMultiplePointers = false;
+  elements.canvasWrap.classList.remove("dragging");
+  elements.tooltip.hidden = true;
+  scheduleAnalysis();
+}
 
 async function writeTextToClipboard(text) {
   try {
@@ -938,8 +1098,64 @@ elements.opacity.addEventListener("input", () => {
 });
 elements.centerMarkToggle.addEventListener("change", scheduleDraw);
 elements.radiusGuideToggle.addEventListener("change", scheduleDraw);
-elements.copyLink.addEventListener("click", () => void copyShareLink());
-elements.download.addEventListener("click", () => void downloadCurrentMap());
+elements.copyLink.addEventListener("click", () => { closeHeaderActions(); void copyShareLink(); });
+elements.download.addEventListener("click", () => { closeHeaderActions(); void downloadCurrentMap(); });
+elements.settingsButton.addEventListener("click", () => openSettings());
+elements.settingsClose.addEventListener("click", () => closeSettings());
+elements.settingsBackdrop.addEventListener("click", () => closeSettings());
+elements.moreButton.addEventListener("click", toggleHeaderActions);
+elements.headerActions.querySelector(".sns-link")?.addEventListener("click", () => closeHeaderActions());
+elements.legendButton.addEventListener("click", () => {
+  const willOpen = !elements.legend.classList.contains("is-open");
+  elements.legend.classList.toggle("is-open", willOpen);
+  elements.legendButton.setAttribute("aria-expanded", String(willOpen));
+  elements.legend.setAttribute("aria-hidden", String(!willOpen));
+});
+elements.mobilePointSummary.addEventListener("click", () => {
+  elements.pointHeading.tabIndex = -1;
+  openSettings(elements.pointHeading);
+});
+
+document.addEventListener("pointerdown", (event) => {
+  if (!elements.headerActions.classList.contains("is-open")) return;
+  if (elements.headerActions.contains(event.target) || elements.moreButton.contains(event.target)) return;
+  closeHeaderActions();
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    if (elements.settingsPanel.classList.contains("is-open")) closeSettings();
+    else closeHeaderActions({ restoreFocus: true });
+    return;
+  }
+  if (event.key !== "Tab" || !elements.settingsPanel.classList.contains("is-open")) return;
+  const focusable = focusableSettingsElements();
+  if (!focusable.length) return;
+  const first = focusable[0], last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault(); last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault(); first.focus();
+  }
+});
+
+mobileLayout.addEventListener("change", () => {
+  cancelAllPointers();
+  syncResponsiveAccessibility();
+  scheduleViewportSync();
+});
+window.addEventListener("resize", scheduleViewportSync);
+window.addEventListener("orientationchange", () => {
+  cancelAllPointers();
+  scheduleViewportSync();
+});
+window.addEventListener("pagehide", cancelAllPointers);
+window.addEventListener("blur", cancelAllPointers);
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) cancelAllPointers();
+});
+window.visualViewport?.addEventListener("resize", scheduleViewportSync);
+window.visualViewport?.addEventListener("scroll", scheduleViewportSync);
 
 const resizeObserver = new ResizeObserver(() => {
   resizeCanvas();
@@ -948,6 +1164,8 @@ const resizeObserver = new ResizeObserver(() => {
 resizeObserver.observe(elements.canvasWrap);
 
 const restoredSharedView = applySharedViewState();
+syncResponsiveAccessibility();
+scheduleViewportSync();
 syncTerrainControls();
 updateZoomControl();
 elements.opacityValue.value = `${elements.opacity.value}%`;

@@ -49,6 +49,8 @@ jobs:
         run: node tests/area.test.mjs
       - name: Verify all discrete share and display combinations
         run: node tests/display-contract.test.mjs
+      - name: Verify mobile pinch accumulation and interruption boundaries
+        run: node tests/mobile-interaction.test.mjs
 
   build-pages-artifact:
     needs: verify-public-surface

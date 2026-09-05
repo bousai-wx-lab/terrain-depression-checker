@@ -1,10 +1,10 @@
 {
   "files": [
     {
-      "bytes": 4035,
+      "bytes": 4162,
       "mime_type": "application/yaml",
       "path": ".github/workflows/privacy-gate.yml",
-      "sha256": "9655ce18a23d67e9b7b9071ed3b4989e91ed19037e4d3cc1868a8718641e9936"
+      "sha256": "0cba9d52986ee9318a6dc643aff985a20dc419957eda2f17e9ac2b59a77b9f24"
     },
     {
       "bytes": 87,
@@ -19,10 +19,10 @@
       "sha256": "ca656e33f8e358eed2ba12861f00e15782359055c2d92b10a2bf019edf8af953"
     },
     {
-      "bytes": 12354,
+      "bytes": 12878,
       "mime_type": "text/markdown",
       "path": "README.md",
-      "sha256": "1222eec6b99cfde449ac0a759331bb28aed416bc16976d3196b74e18890fa226"
+      "sha256": "ddc79e77be9ea69f91f96dce7af6ffb5f5a51889d98a2ac202cb070839de0d97"
     },
     {
       "bytes": 2705,
@@ -37,10 +37,10 @@
       "sha256": "4d964c39d3bd708ae9b317baee4c2b8b3caa12462769b20bb0443568bc0d0a7c"
     },
     {
-      "bytes": 38812,
+      "bytes": 48846,
       "mime_type": "text/javascript",
       "path": "app.js",
-      "sha256": "09dd9632c0fb7856226e65ea9ca82df76d657a3d2e5b70e568243f0ff5cb9875"
+      "sha256": "b58e6fcc31fa2a9c232bc555488c0515fb8be89e66ad53ae0ff636978b1d241d"
     },
     {
       "bytes": 6478,
@@ -33619,16 +33619,22 @@
       "sha256": "9668a7fca9a14ff50d0be3391e0bc3eb4dd004d5b4cdf9ab9412c9152a9df93b"
     },
     {
-      "bytes": 15990,
+      "bytes": 17270,
       "mime_type": "text/html",
       "path": "index.html",
-      "sha256": "7edc8308b7418a68fed9c41bcde36548539e2c55d282f0d65da42e8b2e3af201"
+      "sha256": "cd2544e5c276b3a7c4d9d57a689178175905cacecc15d892c98dc5b2fa9fc761"
     },
     {
-      "bytes": 1525684,
+      "bytes": 1033,
+      "mime_type": "text/javascript",
+      "path": "interaction.js",
+      "sha256": "2975400d946fa708cfed9f7a67c7eacc6c2e39e793512db83f06d31f82ee7500"
+    },
+    {
+      "bytes": 1525747,
       "mime_type": "application/json",
       "path": "release-allowlist.json",
-      "sha256": "704a0f6972297a2da9a202f5e66673e0d91fd2a762a4c024048e634740ef1bae"
+      "sha256": "8f434a4c614e4c328cac37e16b2bdb922ce267608ab97f49ca66afbb0ef3d3a7"
     },
     {
       "bytes": 8659,
@@ -33685,10 +33691,10 @@
       "sha256": "ef0acfa1a35ee7cea2153bb685b2dc0e1e3079913e7d30c1b5c4fcc30fcc8f0b"
     },
     {
-      "bytes": 19878,
+      "bytes": 25901,
       "mime_type": "text/css",
       "path": "styles.css",
-      "sha256": "7b73a63bf7d74201640038647b57dda17be8c2b0d739bd83e8c7345b0a1e4206"
+      "sha256": "f99c22d91e3ad6f923c740fb969400f4cffbe2e54de11cdff31736a590309eed"
     },
     {
       "bytes": 12774,
@@ -33709,13 +33715,19 @@
       "sha256": "d2e5092919f6dbe3f4ab4dc2ceb26ad15e8dfa78341636619fc6ab8cb3c849d0"
     },
     {
+      "bytes": 3227,
+      "mime_type": "text/javascript",
+      "path": "tests/mobile-interaction.test.mjs",
+      "sha256": "c22fe31073f4c0421945999c04f8f9ad05ea7c41c4eceb3da2d1aa0d00daffcc"
+    },
+    {
       "bytes": 8091,
       "mime_type": "text/javascript",
       "path": "tests/terrain.test.mjs",
       "sha256": "bd35bb8f88084be3b0453c98ddb9a02f921fece9e7d72fd2b54cc471eb68224d"
     }
   ],
-  "generated_at_utc": "2026-09-05T07:55:16+00:00",
+  "generated_at_utc": "2026-09-05T10:08:19+00:00",
   "schema_version": 1,
   "tool_slug": "terrain-depression-checker"
 }

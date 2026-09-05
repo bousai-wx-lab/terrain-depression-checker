@@ -32,7 +32,7 @@
     <meta name="twitter:image:alt" content="周囲より低い地形チェッカーの機能と地図表示を紹介するBousai Wx Labのカード画像" />
     <link rel="icon" type="image/png" href="./assets/bousaiwxlab-site-icon.png" />
     <title>周囲より低い地形チェッカー | Bousai Wx Lab</title>
-    <link rel="stylesheet" href="./styles.css?v=20260905-6" />
+    <link rel="stylesheet" href="./styles.css?v=20260905-7" />
   </head>
   <body>
     <header class="topbar">
@@ -54,7 +54,21 @@
             <p class="tool-subtitle">標高から、周りより低い場所を見つけやすく</p>
           </div>
         </div>
-        <div class="header-actions" aria-label="共有とBousai Wx Labの関連リンク">
+        <button
+          id="settingsButton"
+          class="mobile-settings-button"
+          type="button"
+          aria-controls="settingsPanel"
+          aria-expanded="false"
+        >設定</button>
+        <button
+          id="moreButton"
+          class="mobile-more-button"
+          type="button"
+          aria-controls="headerActions"
+          aria-expanded="false"
+        >その他</button>
+        <div id="headerActions" class="header-actions" aria-label="共有とBousai Wx Labの関連リンク">
           <div class="header-share-actions" role="group" aria-label="表示中の地図を共有または保存">
             <button id="copyLinkButton" type="button" title="現在の表示を開ける共有リンクをコピー">
               <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -84,7 +98,12 @@
     </header>
 
     <main class="app">
-      <aside class="controls" aria-label="判定条件">
+      <button id="settingsBackdrop" class="settings-backdrop" type="button" tabindex="-1" aria-label="設定を閉じる"></button>
+      <aside id="settingsPanel" class="controls" aria-label="判定条件と設定">
+        <div class="controls-sheet-header">
+          <h2 id="settingsPanelTitle">設定</h2>
+          <button id="settingsCloseButton" type="button">地図へ戻る</button>
+        </div>
         <section class="control-block primary-control">
           <h2><span class="section-index" aria-hidden="true">01</span>判定条件</h2>
           <label>
@@ -208,7 +227,11 @@
             <button id="zoomOutButton" type="button" aria-label="縮小" title="縮小">−</button>
             <button id="fitButton" type="button" aria-label="最初の範囲へ戻す" title="最初の範囲へ戻す">初</button>
           </div>
-          <div class="legend" aria-label="周囲より低い量の凡例">
+          <button id="legendButton" class="legend-toggle" type="button" aria-controls="mapLegend" aria-expanded="false">
+            <strong>凡例</strong>
+            <small>危険度ではありません</small>
+          </button>
+          <div id="mapLegend" class="legend" aria-label="周囲より低い量の凡例">
             <strong>周囲より低い</strong>
             <span><i class="legend-color c1"></i>0.5–1 m</span>
             <span><i class="legend-color c2"></i>1–1.5 m</span>
@@ -222,6 +245,10 @@
           </div>
           <div id="loadingPanel" class="loading-panel" role="status" aria-live="polite" hidden></div>
           <div id="tooltip" class="tooltip" hidden></div>
+          <button id="mobilePointSummary" class="mobile-point-summary" type="button" aria-controls="settingsPanel" hidden>
+            <span>選択地点</span>
+            <strong id="mobilePointSummaryValue">計算中</strong>
+          </button>
           <div id="mapScale" class="map-scale" aria-label="縮尺">
             <span id="mapScaleLabel">500 m</span>
             <i id="mapScaleLine" aria-hidden="true"></i>
@@ -243,6 +270,6 @@
     </footer>
 
     <noscript>このツールの利用にはJavaScriptが必要です。</noscript>
-    <script type="module" src="./app.js?v=20260905-8" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script type="module" src="./app.js?v=20260905-9" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   </body>
 </html>

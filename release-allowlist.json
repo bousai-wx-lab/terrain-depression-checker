@@ -10,6 +10,7 @@
     "analysis-worker.js",
     "app.js",
     "area.js",
+    "interaction.js",
     "assets/bousaiwxlab-site-icon.png",
     "assets/terrain-depression-share-card.png",
     "data/area-index.json",
@@ -5621,6 +5622,7 @@
     "terrain.js",
     "tests/area.test.mjs",
     "tests/display-contract.test.mjs",
+    "tests/mobile-interaction.test.mjs",
     "tests/terrain.test.mjs"
   ],
   "allowed_external_hosts": [
