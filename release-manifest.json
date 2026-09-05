@@ -19,10 +19,10 @@
       "sha256": "ca656e33f8e358eed2ba12861f00e15782359055c2d92b10a2bf019edf8af953"
     },
     {
-      "bytes": 12230,
+      "bytes": 12354,
       "mime_type": "text/markdown",
       "path": "README.md",
-      "sha256": "d89c92069488426c60bb02fd0e28bd102bb3dcc7ee7085eb66c29352b62607e4"
+      "sha256": "1222eec6b99cfde449ac0a759331bb28aed416bc16976d3196b74e18890fa226"
     },
     {
       "bytes": 2705,
@@ -37,10 +37,10 @@
       "sha256": "4d964c39d3bd708ae9b317baee4c2b8b3caa12462769b20bb0443568bc0d0a7c"
     },
     {
-      "bytes": 38441,
+      "bytes": 38812,
       "mime_type": "text/javascript",
       "path": "app.js",
-      "sha256": "50717753b02003b7185411b77f9d8196f6762be9d55648a68f2d5a2236414150"
+      "sha256": "09dd9632c0fb7856226e65ea9ca82df76d657a3d2e5b70e568243f0ff5cb9875"
     },
     {
       "bytes": 6478,
@@ -55,10 +55,10 @@
       "sha256": "f2258fc48adea8bdcf175699fb08b434b039c0aee83a4439c181741f3c2a4c9e"
     },
     {
-      "bytes": 2717426,
+      "bytes": 2630019,
       "mime_type": "image/png",
       "path": "assets/terrain-depression-share-card.png",
-      "sha256": "9a009f0503a2e3c0218965e4c4a673575101149a0bc5333aab693ba497376159"
+      "sha256": "4a23aa58548fb2bf53d70315ed8b6d58ce8422b46a1a73666d688d608eaf1758"
     },
     {
       "bytes": 688347,
@@ -33622,13 +33622,13 @@
       "bytes": 15990,
       "mime_type": "text/html",
       "path": "index.html",
-      "sha256": "7e90bcd2520807af19e40924d185c84ae1fdd772d8f061ad733464c6a77f6de8"
+      "sha256": "7edc8308b7418a68fed9c41bcde36548539e2c55d282f0d65da42e8b2e3af201"
     },
     {
-      "bytes": 1525204,
+      "bytes": 1525501,
       "mime_type": "application/json",
       "path": "release-allowlist.json",
-      "sha256": "4aad9f9b6caca21a56e342831b22c28a7ef66ccc6162af1b5e494cf7d9202093"
+      "sha256": "6f04ef6bf4e22849abbc4f56833be1f908a75d8225b0113b92fbfa2e9d0b82b1"
     },
     {
       "bytes": 8659,
@@ -33715,7 +33715,7 @@
       "sha256": "bd35bb8f88084be3b0453c98ddb9a02f921fece9e7d72fd2b54cc471eb68224d"
     }
   ],
-  "generated_at_utc": "2026-09-05T06:56:22+00:00",
+  "generated_at_utc": "2026-09-05T07:48:43+00:00",
   "schema_version": 1,
   "tool_slug": "terrain-depression-checker"
 }

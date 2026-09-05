@@ -795,7 +795,19 @@ function createExportCanvas() {
   const { width, height } = canvasCssSize();
   const compact = width <= 520;
   const headerHeight = compact ? 58 : 64;
-  const footerHeight = compact ? 58 : 42;
+  const usesColorRelief =
+    elements.terrainToggle.checked &&
+    elements.terrainStyle.value === "color" &&
+    Number(elements.terrainOpacity.value) > 0;
+  const footerLines = [
+    "出典：国土地理院「地理院タイル」",
+    "地理院タイル（標高タイル）を加工／Bousai Wx Lab 作成",
+    ...(usesColorRelief ? ["色別標高図の海域部：海上保安庁海洋情報部の資料を使用して作成"] : []),
+    "周囲との標高差です。浸水想定・災害危険度ではありません。",
+    "避難・土地利用は公式ハザードマップと現地状況を確認してください。",
+  ];
+  const footerLineHeight = compact ? 14 : 15;
+  const footerHeight = (compact ? 12 : 14) + footerLines.length * footerLineHeight;
   const exportScale = Math.min(2, Math.max(1, state.deviceScale));
   const exportCanvas = document.createElement("canvas");
   exportCanvas.width = Math.round(width * exportScale);
@@ -849,11 +861,9 @@ function createExportCanvas() {
   exportContext.fillRect(0, footerTop, width, footerHeight);
   exportContext.fillStyle = "#d9e8f2";
   exportContext.font = `650 ${compact ? 8 : 9}px sans-serif`;
-  fittedCanvasText(exportContext, "出典：国土地理院「地理院タイル」・標高タイルを加工", 12, footerTop + 17, width - 24);
-  fittedCanvasText(exportContext, "周囲との標高差を示す参考表示です。浸水想定や災害危険度ではありません。", 12, footerTop + (compact ? 36 : 32), width - 24);
-  if (compact) {
-    fittedCanvasText(exportContext, "避難や土地利用は公式ハザードマップと現地状況も確認してください。", 12, footerTop + 51, width - 24);
-  }
+  footerLines.forEach((line, index) => {
+    fittedCanvasText(exportContext, line, 12, footerTop + (compact ? 15 : 17) + index * footerLineHeight, width - 24);
+  });
   return exportCanvas;
 }
 
