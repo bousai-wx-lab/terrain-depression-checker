@@ -5648,8 +5648,8 @@
     },
     {
       "path": "assets/terrain-depression-share-card.png",
-      "bytes": 2717426,
-      "sha256": "9a009f0503a2e3c0218965e4c4a673575101149a0bc5333aab693ba497376159",
+      "bytes": 2630019,
+      "sha256": "4a23aa58548fb2bf53d70315ed8b6d58ce8422b46a1a73666d688d608eaf1758",
       "mime_type": "image/png",
       "width": 1774,
       "height": 887,
@@ -44809,6 +44809,16 @@
       "mime_type": "image/png",
       "width": 1731,
       "height": 909,
+      "bit_depth": 8,
+      "color_type": 2
+    },
+    {
+      "path": "assets/terrain-depression-share-card.png",
+      "bytes": 2717426,
+      "sha256": "9a009f0503a2e3c0218965e4c4a673575101149a0bc5333aab693ba497376159",
+      "mime_type": "image/png",
+      "width": 1774,
+      "height": 887,
       "bit_depth": 8,
       "color_type": 2
     }
