@@ -781,6 +781,20 @@ dd {
   pointer-events: none;
 }
 
+.loading-panel button {
+  display: block;
+  min-height: 44px;
+  margin: 8px auto 0;
+  padding: 6px 18px;
+  border: 1px solid #075780;
+  border-radius: 5px;
+  background: #075780;
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
 .tooltip {
   position: absolute;
   z-index: 9;

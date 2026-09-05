@@ -26,3 +26,7 @@ jobs:
         run: python3 scripts/test_privacy_gate.py
       - name: Verify terrain calculations
         run: node tests/terrain.test.mjs
+      - name: Verify full-area mean against independent disk enumeration
+        run: node tests/area.test.mjs
+      - name: Verify all discrete share and display combinations
+        run: node tests/display-contract.test.mjs

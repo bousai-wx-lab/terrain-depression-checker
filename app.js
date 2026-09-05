@@ -1,33 +1,14 @@
 import {
-  DEM_ZOOM,
-  MAX_MAP_ZOOM,
-  TILE_SIZE,
-  analysisSourceZoom,
-  calculateDirectionalRelativeDepth,
-  decodeElevationRgb,
-  depthColor,
-  destinationPoint,
-  elevationDifference,
-  lonLatToWorldPixel,
-  metersPerPixel,
-  MIN_RADIUS_SOURCE_PIXELS,
-  parseShareState,
-  ringSamplingSpec,
-  scaleBarSpec,
-  serializeShareState,
-  tileCoordinate,
-  tileSourceZoom,
-  worldPixelToLonLat,
-} from "./terrain.js?v=20260905-4";
-
+  MAX_MAP_ZOOM, TILE_SIZE, depthColor, destinationPoint, elevationDifference,
+  lonLatToWorldPixel, metersPerPixel, parseShareState, scaleBarSpec,
+  serializeShareState, tileSourceZoom, worldPixelToLonLat,
+} from "./terrain.js?v=20260905-6";
 const GSI_ORIGIN = "https://cyberjapandata.gsi.go.jp";
-const DEM_SOURCES = ["dem1a_png", "dem5a_png", "dem5b_png", "dem5c_png", "dem_png"];
+
 const INITIAL_VIEW = Object.freeze({ longitude: 139.767, latitude: 35.681, zoom: 14 });
 const MIN_ZOOM = 5;
 const MAX_ZOOM = MAX_MAP_ZOOM;
-const MAX_DEM_TILES = 72;
 const MAP_TILE_CACHE_LIMIT = 120;
-const DEM_TILE_CACHE_LIMIT = 80;
 
 const elements = {
   canvasWrap: document.querySelector("#canvasWrap"),
@@ -74,7 +55,8 @@ const state = {
   zoom: INITIAL_VIEW.zoom,
   deviceScale: 1,
   mapTiles: new Map(),
-  demTiles: new Map(),
+  pointSequence: 0,
+  pendingSignature: '',
   analysis: null,
   analysisSequence: 0,
   analyzeTimer: 0,
@@ -315,7 +297,6 @@ function analysisSignature() {
     Math.round(size.width),
     Math.round(size.height),
     elements.radius.value,
-    elements.threshold.value,
   ].join(":");
 }
 
@@ -335,9 +316,13 @@ function drawCenterGuides() {
 
   context.save();
   if (elements.radiusGuideToggle.checked) {
-    const radius = Number(elements.radius.value) / metersPerPixel(state.latitude, state.zoom) * scale;
     context.beginPath();
-    context.arc(centerX, centerY, radius, 0, Math.PI * 2);
+    for (let i = 0; i <= 128; i++) {
+      const point = lonLatToCss(destinationPoint(state.longitude, state.latitude, Number(elements.radius.value), i * Math.PI / 64));
+      if (i === 0) context.moveTo(point.x * scale, point.y * scale);
+      else context.lineTo(point.x * scale, point.y * scale);
+    }
+    context.closePath();
     context.setLineDash([7 * scale, 5 * scale]);
     context.lineWidth = 5 * scale;
     context.strokeStyle = "rgba(255, 255, 255, 0.9)";
@@ -406,18 +391,23 @@ function updateStamp(message, gridSpacingMeters = null) {
   const gridLabel = Number.isFinite(gridSpacingMeters) ? `・格子${resolutionLabel(gridSpacingMeters).replace("/画素", "")}` : "";
   elements.stampTitle.textContent = `周囲より低い量（半径${radiusLabel()}・着色${thresholdLabel()}${gridLabel}）`;
   elements.stampStatus.textContent = message;
+  elements.canvasWrap.dataset.status = message;
 }
 
 function scheduleAnalysis() {
   window.clearTimeout(state.analyzeTimer);
   state.analyzeTimer = window.setTimeout(() => {
-    void analyzeVisibleArea();
-  }, 420);
+    if (!state.pointers.size) analyzeVisibleArea();
+  }, 120);
 }
 
 function invalidateAnalysis(message, { preserveSelection = false } = {}) {
   state.analysisSequence += 1;
+  analysisWorker.postMessage({ type: "cancel", id: state.analysisSequence });
+  state.pointSequence += 1;
   state.analysis = null;
+  elements.download.disabled = true;
+  elements.canvasWrap.dataset.ready = "false";
   clearPointReadout({ clearSelection: !preserveSelection });
   updateStamp(message);
   hideLoading();
@@ -425,200 +415,37 @@ function invalidateAnalysis(message, { preserveSelection = false } = {}) {
   scheduleAnalysis();
 }
 
-async function imageFromBlob(blob) {
-  if (typeof createImageBitmap === "function") return createImageBitmap(blob);
-  const objectUrl = URL.createObjectURL(blob);
-  try {
-    const image = new Image();
-    image.decoding = "async";
-    await new Promise((resolve, reject) => {
-      image.addEventListener("load", resolve, { once: true });
-      image.addEventListener("error", reject, { once: true });
-      image.src = objectUrl;
-    });
-    return image;
-  } finally {
-    URL.revokeObjectURL(objectUrl);
-  }
-}
 
-function demSourcesForZoom(zoom) {
-  return zoom <= 12 ? ["dem_png"] : DEM_SOURCES;
-}
-
-async function fetchDemSource(source, zoom, tileX, tileY) {
-  const url = `${GSI_ORIGIN}/xyz/${source}/${zoom}/${tileX}/${tileY}.png`;
-  const response = await fetch(url, {
-    method: "GET",
-    mode: "cors",
-    credentials: "omit",
-    cache: "force-cache",
-    referrerPolicy: "no-referrer",
-  });
-  if (response.status === 404) return null;
-  if (!response.ok) throw new Error(`DEM request failed with status ${response.status}`);
-  const blob = await response.blob();
-  if (blob.type && blob.type !== "image/png") throw new Error("DEM response was not PNG");
-  const image = await imageFromBlob(blob);
-  const tileCanvas = document.createElement("canvas");
-  tileCanvas.width = TILE_SIZE;
-  tileCanvas.height = TILE_SIZE;
-  const tileContext = tileCanvas.getContext("2d", { willReadFrequently: true });
-  tileContext.drawImage(image, 0, 0, TILE_SIZE, TILE_SIZE);
-  if (typeof image.close === "function") image.close();
-  return tileContext.getImageData(0, 0, TILE_SIZE, TILE_SIZE).data;
-}
-
-async function loadDemTile(zoom, tileX, tileY) {
-  const key = `${zoom}/${tileX}/${tileY}`;
-  if (state.demTiles.has(key)) return state.demTiles.get(key);
-
-  const promise = (async () => {
-    const elevations = new Float32Array(TILE_SIZE * TILE_SIZE);
-    elevations.fill(Number.NaN);
-    const sources = new Uint8Array(TILE_SIZE * TILE_SIZE);
-    const usedSources = new Set();
-    let validCount = 0;
-
-    const demSources = demSourcesForZoom(zoom);
-    for (let sourceIndex = 0; sourceIndex < demSources.length; sourceIndex += 1) {
-      const pixels = await fetchDemSource(demSources[sourceIndex], zoom, tileX, tileY);
-      if (!pixels) continue;
-      for (let index = 0; index < elevations.length; index += 1) {
-        if (Number.isFinite(elevations[index])) continue;
-        const offset = index * 4;
-        const elevation = decodeElevationRgb(pixels[offset], pixels[offset + 1], pixels[offset + 2]);
-        if (elevation === null) continue;
-        elevations[index] = elevation;
-        sources[index] = sourceIndex + 1;
-        usedSources.add(demSources[sourceIndex]);
-        validCount += 1;
-      }
-      if (validCount === elevations.length) break;
-    }
-    return { elevations, sources, usedSources, validCount };
-  })();
-
-  state.demTiles.set(key, promise);
-  promise.catch(() => {
-    if (state.demTiles.get(key) === promise) state.demTiles.delete(key);
-  });
-  if (state.demTiles.size > DEM_TILE_CACHE_LIMIT) {
-    for (const cacheKey of state.demTiles.keys()) {
-      if (state.demTiles.size <= DEM_TILE_CACHE_LIMIT) break;
-      if (cacheKey === key) continue;
-      state.demTiles.delete(cacheKey);
-    }
-  }
-  return promise;
-}
-
-async function runPool(tasks, concurrency, onProgress) {
-  let nextIndex = 0;
-  let completed = 0;
-  async function worker() {
-    while (nextIndex < tasks.length) {
-      const index = nextIndex;
-      nextIndex += 1;
-      await tasks[index]();
-      completed += 1;
-      onProgress(completed, tasks.length);
-    }
-  }
-  await Promise.all(Array.from({ length: Math.min(concurrency, tasks.length) }, worker));
-}
-
-function demTileAt(tileMap, zoom, worldX, worldY) {
-  const xCoordinate = tileCoordinate(worldX);
-  const yCoordinate = tileCoordinate(worldY);
-  const key = `${zoom}/${xCoordinate.tile}/${yCoordinate.tile}`;
-  const tile = tileMap.get(key);
-  if (!tile) return Number.NaN;
-  return tile.elevations[yCoordinate.pixel * TILE_SIZE + xCoordinate.pixel];
-}
-
-function ringOffsetsAtLatitude(latitude, zoom, radiusMeters, sampleCount) {
-  const origin = lonLatToWorldPixel(0, latitude, zoom);
-  return Array.from({ length: sampleCount }, (_, index) => {
-    const destination = destinationPoint(0, latitude, radiusMeters, index * Math.PI * 2 / sampleCount);
-    const world = lonLatToWorldPixel(destination.longitude, destination.latitude, zoom);
-    return { x: world.x - origin.x, y: world.y - origin.y };
-  });
-}
-
-function calculateAtWorld(tileMap, zoom, worldX, worldY, latitude, radiusMeters, sampling, scratch, preparedOffsets = null) {
-  const centerElevation = demTileAt(tileMap, zoom, worldX, worldY);
-  if (!Number.isFinite(centerElevation)) return null;
-  const offsets = preparedOffsets ?? ringOffsetsAtLatitude(latitude, zoom, radiusMeters, sampling.sampleCount);
-  const surrounding = scratch ?? new Float64Array(sampling.sampleCount);
-  for (let index = 0; index < offsets.length; index += 1) {
-    surrounding[index] = demTileAt(tileMap, zoom, worldX + offsets[index].x, worldY + offsets[index].y);
-  }
-  return calculateDirectionalRelativeDepth(centerElevation, surrounding, sampling);
-}
 
 function formatMeters(value, signed = false) {
   if (!Number.isFinite(value)) return "--";
   const rounded = Math.abs(value) < 0.05 ? 0 : value;
-  const prefix = signed ? (rounded > 0 ? "+" : rounded < 0 ? "−" : "") : "";
+  const prefix = rounded < 0 ? "−" : signed && rounded > 0 ? "+" : "";
   return `${prefix}${Math.abs(rounded).toFixed(1)} m`;
 }
 
 function buildOverlay(result, width, height) {
-  const overlay = document.createElement("canvas");
-  overlay.width = elements.canvas.width;
-  overlay.height = elements.canvas.height;
-  const overlayContext = overlay.getContext("2d");
-  overlayContext.scale(state.deviceScale, state.deviceScale);
+  const cells = document.createElement("canvas");
+  cells.width = result.columns; cells.height = result.rows;
+  const cellContext = cells.getContext("2d"), pixels = cellContext.createImageData(result.columns, result.rows);
   const threshold = Number(elements.threshold.value);
   let coloredCount = 0;
-  for (let row = 0; row < result.rows; row += 1) {
-    for (let column = 0; column < result.columns; column += 1) {
-      const index = row * result.columns + column;
-      const depth = result.depths[index];
-      if (!Number.isFinite(depth) || depth < threshold) continue;
+  for (let i = 0; i < result.depths.length; i++) {
+    const depth = result.depths[i];
+    if (result.statuses[i] === 2 || result.statuses[i] === 3) {
+      pixels.data.set([105, 115, 122, 90], i * 4);
+    } else if (result.statuses[i] === 1 && Number.isFinite(depth) && depth >= threshold) {
       const color = depthColor(depth);
-      if (!color) continue;
-      overlayContext.fillStyle = `rgb(${color[0]} ${color[1]} ${color[2]} / 82%)`;
-      overlayContext.fillRect(column * result.step, row * result.step, result.step + 1, result.step + 1);
-      coloredCount += 1;
+      if (color) { pixels.data.set([...color, 209], i * 4); coloredCount++; }
     }
   }
-  result.overlay = overlay;
-  result.coloredCount = coloredCount;
-  result.width = width;
-  result.height = height;
-}
-
-function makeAnalysisPlan(zoom, width, height, radiusMeters) {
-  const centerDem = currentCenterWorld(zoom);
-  const demPerCssPixel = 2 ** (zoom - state.zoom);
-  const radiusPixels = radiusMeters / metersPerPixel(state.latitude, zoom);
-  const buffer = Math.max(1, radiusPixels * 1.08);
-  const left = centerDem.x - width / 2 * demPerCssPixel - buffer;
-  const right = centerDem.x + width / 2 * demPerCssPixel + buffer;
-  const top = centerDem.y - height / 2 * demPerCssPixel - buffer;
-  const bottom = centerDem.y + height / 2 * demPerCssPixel + buffer;
-  const xMin = Math.floor(left / TILE_SIZE);
-  const xMax = Math.floor(right / TILE_SIZE);
-  const yMin = Math.floor(top / TILE_SIZE);
-  const yMax = Math.floor(bottom / TILE_SIZE);
-  const tileKeys = [];
-  for (let tileX = xMin; tileX <= xMax; tileX += 1) {
-    for (let tileY = yMin; tileY <= yMax; tileY += 1) {
-      tileKeys.push({ tileX, tileY, key: `${zoom}/${tileX}/${tileY}` });
-    }
-  }
-  return { zoom, centerDem, demPerCssPixel, radiusPixels, tileKeys };
-}
-
-function chooseAnalysisPlan(width, height, radiusMeters) {
-  const highestZoom = analysisSourceZoom(state.zoom);
-  for (let zoom = highestZoom; zoom >= MIN_ZOOM; zoom -= 1) {
-    const plan = makeAnalysisPlan(zoom, width, height, radiusMeters);
-    if (plan.tileKeys.length <= MAX_DEM_TILES) return plan;
-  }
-  return makeAnalysisPlan(MIN_ZOOM, width, height, radiusMeters);
+  cellContext.putImageData(pixels, 0, 0);
+  const overlay = document.createElement("canvas");
+  overlay.width = elements.canvas.width; overlay.height = elements.canvas.height;
+  const overlayContext = overlay.getContext("2d");
+  overlayContext.imageSmoothingEnabled = false;
+  overlayContext.drawImage(cells, 0, 0, result.columns * result.step * state.deviceScale, result.rows * result.step * state.deviceScale);
+  Object.assign(result, { overlay, coloredCount, width, height });
 }
 
 function resolutionLabel(meters) {
@@ -627,150 +454,62 @@ function resolutionLabel(meters) {
   return `約${meters.toFixed(1)}m/画素`;
 }
 
-async function analyzeVisibleArea() {
-  const sequence = state.analysisSequence + 1;
-  state.analysisSequence = sequence;
-  const signature = analysisSignature();
-  const { width, height } = canvasCssSize();
-  const radiusMeters = Number(elements.radius.value);
-  const plan = chooseAnalysisPlan(width, height, radiusMeters);
-  const { centerDem, demPerCssPixel, radiusPixels, tileKeys } = plan;
-  const sourceResolution = metersPerPixel(state.latitude, plan.zoom);
-  const sampling = ringSamplingSpec(radiusMeters, sourceResolution);
+const analysisWorker = new Worker("./analysis-worker.js?v=20260905-6", { type: "module" });
 
-  if (tileKeys.length > MAX_DEM_TILES) {
-    updateStamp("この表示範囲は解析できません。少し拡大してください");
-    showLoading("解析範囲が広すぎます");
+function analysisMessage(result) {
+  return `円内の陸地平均・集計格子${resolutionLabel(result.sourceResolution).replace("/画素", "")}・${(result.elapsedMs / 1000).toFixed(2)}秒`;
+}
+
+analysisWorker.addEventListener("message", ({ data }) => {
+  if (data.type === "point") {
+    if (data.analysisId !== state.analysisSequence || data.pointId !== state.pointSequence || !state.selectedPoint) return;
+    updatePointReadout(state.selectedPoint, data.value);
     return;
   }
-
-  if (radiusPixels < MIN_RADIUS_SOURCE_PIXELS) {
+  if (data.id !== state.analysisSequence || state.pendingSignature !== analysisSignature()) return;
+  if (data.type === "progress") { showLoading(data.message); updateStamp(data.message); return; }
+  if (data.type === "error" || data.type === "unavailable") {
     state.analysis = null;
-    updateStamp(`この倍率では半径${radiusLabel()}が標高データの${MIN_RADIUS_SOURCE_PIXELS}画素未満です。拡大してください`);
-    showLoading(`半径${radiusLabel()}を正しく比べるには、地図を拡大してください`);
-    scheduleDraw();
-    return;
-  }
-
-  showLoading(`標高タイルを取得中 0/${tileKeys.length}`);
-  updateStamp(`国土地理院の標高タイルを取得中・${resolutionLabel(sourceResolution)}`);
-
-  const loadedTiles = new Map();
-  const tasks = tileKeys.map(({ tileX, tileY, key }) => async () => {
-    const tile = await loadDemTile(plan.zoom, tileX, tileY);
-    loadedTiles.set(key, tile);
-  });
-  try {
-    await runPool(tasks, 6, (completed, total) => {
-      if (sequence === state.analysisSequence) showLoading(`標高タイルを取得中 ${completed}/${total}`);
-    });
-  } catch {
-    if (sequence !== state.analysisSequence) return;
-    showLoading("標高データを取得できませんでした。通信状態を確認してください");
-    updateStamp("標高データを取得できませんでした");
-    return;
-  }
-
-  if (sequence !== state.analysisSequence || signature !== analysisSignature()) return;
-  showLoading("周囲との標高差を計算中");
-  await new Promise((resolve) => window.requestAnimationFrame(resolve));
-
-  const baseStep = width <= 520 ? 5 : 6;
-  const step = Math.min(
-    Math.max(width, height),
-    Math.max(baseStep, Math.ceil(1 / demPerCssPixel)),
-  );
-  const columns = Math.ceil(width / step);
-  const rows = Math.ceil(height / step);
-  const depths = new Float32Array(columns * rows);
-  const elevations = new Float32Array(columns * rows);
-  const surroundings = new Float32Array(columns * rows);
-  const sampleCounts = new Uint16Array(columns * rows);
-  const sectorCounts = new Uint8Array(columns * rows);
-  const quadrantCounts = new Uint8Array(columns * rows);
-  depths.fill(Number.NaN);
-  elevations.fill(Number.NaN);
-  surroundings.fill(Number.NaN);
-  const sourceNames = new Set();
-  let validCount = 0;
-
-  for (const tile of loadedTiles.values()) {
-    for (const source of tile.usedSources) sourceNames.add(source);
-  }
-
-  for (let row = 0; row < rows; row += 1) {
-    const cssY = Math.min(height - 1, row * step + step / 2);
-    const worldY = centerDem.y + (cssY - height / 2) * demPerCssPixel;
-    const rowLatitude = worldPixelToLonLat(centerDem.x, worldY, plan.zoom).latitude;
-    const rowOffsets = ringOffsetsAtLatitude(rowLatitude, plan.zoom, radiusMeters, sampling.sampleCount);
-    const surroundingScratch = new Float64Array(sampling.sampleCount);
-    for (let column = 0; column < columns; column += 1) {
-      const cssX = Math.min(width - 1, column * step + step / 2);
-      const worldX = centerDem.x + (cssX - width / 2) * demPerCssPixel;
-      const value = calculateAtWorld(
-        loadedTiles,
-        plan.zoom,
-        worldX,
-        worldY,
-        rowLatitude,
-        radiusMeters,
-        sampling,
-        surroundingScratch,
-        rowOffsets,
-      );
-      if (!value) continue;
-      const index = row * columns + column;
-      depths[index] = value.depth;
-      elevations[index] = value.center;
-      surroundings[index] = value.surroundingMean;
-      sampleCounts[index] = value.usableSampleCount;
-      sectorCounts[index] = value.sectorCount;
-      quadrantCounts[index] = value.quadrantCount;
-      validCount += 1;
+    updateStamp(data.message); showLoading(data.message);
+    elements.canvasWrap.dataset.ready = "error";
+    if (data.type === "error") {
+      const retry = document.createElement("button");
+      retry.type = "button"; retry.textContent = "再試行";
+      retry.addEventListener("click", () => invalidateAnalysis("再試行します", { preserveSelection: true }));
+      elements.loading.append(document.createTextNode(" "), retry);
     }
-    if (row % 20 === 0) await new Promise((resolve) => window.setTimeout(resolve, 0));
-    if (sequence !== state.analysisSequence) return;
+    scheduleDraw(); return;
   }
-
-  if (signature !== analysisSignature()) return;
-  const result = {
-    signature,
-    step,
-    columns,
-    rows,
-    depths,
-    elevations,
-    surroundings,
-    sampleCounts,
-    sectorCounts,
-    quadrantCounts,
-    validCount,
-    sourceNames: [...sourceNames],
-    analysisZoom: plan.zoom,
-    sourceResolution,
-    radiusPixels,
-    sampling,
-    radiusMeters,
-    loadedTiles,
-  };
+  if (data.type !== "result") return;
+  const { width, height } = canvasCssSize();
+  const result = { ...data, signature: state.pendingSignature, radiusMeters: Number(elements.radius.value) };
+  result.gridSpacing = result.step * metersPerPixel(state.latitude, state.zoom);
   buildOverlay(result, width, height);
   state.analysis = result;
-  const sourceLabel = result.sourceNames.length ? result.sourceNames.map((name) => name.replace("_png", "").toUpperCase()).join(" / ") : "標高データなし";
-  const resolution = resolutionLabel(result.sourceResolution);
-  const gridSpacing = step * metersPerPixel(state.latitude, state.zoom);
-  result.gridSpacing = gridSpacing;
-  if (validCount === 0) {
-    showLoading("この範囲では、周囲を十分な方向から確認できる標高データがありません");
-    updateStamp(`判定可能な格子なし・標高 ${sourceLabel}・元データ${resolution}`, gridSpacing);
-  } else {
-    hideLoading();
-    updateStamp(
-      `${result.coloredCount.toLocaleString("ja-JP")}格子を着色・標高 ${sourceLabel}・元データ${resolution}・周囲${sampling.sampleCount}方向を検査`,
-      gridSpacing,
-    );
-  }
-  restoreSelectedPoint();
-  scheduleDraw();
+  elements.canvasWrap.dataset.ready = "true";
+  for (const key of ["elapsedMs", "fetchMs", "calculationMs", "prefixMiB", "analysisZoom", "validCount"]) elements.canvasWrap.dataset[key] = String(result[key]);
+  elements.download.disabled = false;
+  updateStamp(analysisMessage(result), result.gridSpacing);
+  if (result.validCount) hideLoading();
+  else showLoading("この範囲には判定できる陸地がありません。灰色は範囲外・判定不能です");
+  restoreSelectedPoint(); scheduleDraw();
+});
+analysisWorker.addEventListener("error", () => {
+  state.analysis = null; elements.canvasWrap.dataset.ready = "error";
+  const message = "計算機能を起動できませんでした。ページを再読み込みしてください";
+  showLoading(message); updateStamp(message); scheduleDraw();
+});
+
+function analyzeVisibleArea() {
+  const id = ++state.analysisSequence, { width, height } = canvasCssSize();
+  state.pendingSignature = analysisSignature();
+  elements.canvasWrap.dataset.ready = "false";
+  elements.download.disabled = true;
+  showLoading("円内の陸地平均を準備中");
+  analysisWorker.postMessage({ type: "analyze", id, view: {
+    longitude: state.longitude, latitude: state.latitude, zoom: state.zoom,
+    radius: Number(elements.radius.value), width, height,
+  } });
 }
 
 function analysisAtCss(x, y) {
@@ -785,35 +524,19 @@ function analysisAtCss(x, y) {
     surrounding: result.surroundings[index],
     depth: result.depths[index],
     elevationDifference: elevationDifference(result.elevations[index], result.surroundings[index]),
-    sampleCount: result.sampleCounts[index],
-    sectorCount: result.sectorCounts[index],
-    quadrantCount: result.quadrantCounts[index],
+    status: result.statuses[index],
+    landFraction: result.landFractions[index],
   };
 }
 
-function analysisAtPosition(position) {
-  const result = state.analysis;
-  if (!result || result.signature !== analysisSignature()) return null;
-  const world = lonLatToWorldPixel(position.longitude, position.latitude, result.analysisZoom);
-  const value = calculateAtWorld(
-    result.loadedTiles,
-    result.analysisZoom,
-    world.x,
-    world.y,
-    position.latitude,
-    result.radiusMeters,
-    result.sampling,
-  );
-  if (!value) return null;
-  return {
-    elevation: value.center,
-    surrounding: value.surroundingMean,
-    depth: value.depth,
-    elevationDifference: elevationDifference(value.center, value.surroundingMean),
-    sampleCount: value.usableSampleCount,
-    sectorCount: value.sectorCount,
-    quadrantCount: value.quadrantCount,
-  };
+function requestSelectedPoint() {
+  if (!state.analysis || !state.selectedPoint) return;
+  const pointId = ++state.pointSequence;
+  updatePointReadout(state.selectedPoint, null);
+  elements.elevation.textContent = "計算中";
+  elements.surrounding.textContent = "計算中";
+  elements.depth.textContent = "計算中";
+  analysisWorker.postMessage({ type: "point", pointId, analysisId: state.analysisSequence, position: state.selectedPoint });
 }
 
 function clearPointReadout({ clearSelection = false } = {}) {
@@ -851,13 +574,13 @@ function restoreSelectedPoint() {
     clearPointReadout({ clearSelection: true });
     return;
   }
-  updatePointReadout(state.selectedPoint, analysisAtPosition(state.selectedPoint));
+  requestSelectedPoint();
 }
 
 function selectPoint(x, y) {
   const position = cssToLonLat(x, y);
   state.selectedPoint = position;
-  updatePointReadout(position, analysisAtPosition(position));
+  requestSelectedPoint();
 }
 
 function updateTooltip(event) {
@@ -871,7 +594,7 @@ function updateTooltip(event) {
     elements.tooltip.hidden = true;
     return;
   }
-  elements.tooltip.textContent = `標高 ${formatMeters(value.elevation)}\n周囲平均 ${formatMeters(value.surrounding)}\n標高差（地点−周囲平均） ${formatMeters(value.elevationDifference, true)}`;
+  elements.tooltip.textContent = `標高 ${formatMeters(value.elevation)}\n円内陸地平均 ${formatMeters(value.surrounding)}\n標高差（地点−周囲平均） ${formatMeters(value.elevationDifference, true)}`;
   elements.tooltip.style.left = `${Math.min(point.x + 14, canvasCssSize().width - 205)}px`;
   elements.tooltip.style.top = `${Math.min(point.y + 14, canvasCssSize().height - 92)}px`;
   elements.tooltip.hidden = false;
@@ -958,6 +681,7 @@ function finishPointer(event) {
     state.downPoint = null;
     elements.canvasWrap.classList.remove("dragging");
     if (wasTap) selectPoint(point.x, point.y);
+    else scheduleAnalysis();
   }
 }
 
@@ -1167,7 +891,7 @@ async function downloadCurrentMap() {
   } catch {
     setActionStatus(elements.download, elements.downloadLabel, "error", "失敗", "PNG画像を保存できませんでした");
   } finally {
-    elements.download.disabled = false;
+    elements.download.disabled = !state.analysis;
   }
 }
 
@@ -1176,7 +900,13 @@ elements.zoomOut.addEventListener("click", () => setZoom(state.zoom - 1));
 elements.fit.addEventListener("click", resetView);
 
 elements.radius.addEventListener("change", () => invalidateAnalysis("判定半径を変更しました", { preserveSelection: true }));
-elements.threshold.addEventListener("change", () => invalidateAnalysis("表示下限を変更しました", { preserveSelection: true }));
+elements.threshold.addEventListener("change", () => {
+  if (state.analysis) {
+    buildOverlay(state.analysis, state.analysis.width, state.analysis.height);
+    updateStamp(analysisMessage(state.analysis), state.analysis.gridSpacing);
+  } else updateStamp("円内の陸地平均を準備中");
+  scheduleDraw();
+});
 elements.baseMap.addEventListener("change", scheduleDraw);
 elements.baseMapOpacity.addEventListener("input", () => {
   elements.baseMapOpacityValue.value = `${elements.baseMapOpacity.value}%`;

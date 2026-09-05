@@ -6,7 +6,7 @@
     <meta name="referrer" content="no-referrer" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; base-uri 'none'; object-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: https://cyberjapandata.gsi.go.jp; connect-src 'self' https://cyberjapandata.gsi.go.jp; form-action 'none'; upgrade-insecure-requests"
+      content="default-src 'self'; base-uri 'none'; object-src 'none'; script-src 'self'; worker-src 'self'; style-src 'self'; img-src 'self' data: blob: https://cyberjapandata.gsi.go.jp; connect-src 'self' https://cyberjapandata.gsi.go.jp; form-action 'none'; upgrade-insecure-requests"
     />
     <meta
       name="description"
@@ -32,7 +32,7 @@
     <meta name="twitter:image:alt" content="周囲より低い地形チェッカーの機能と地図表示を紹介するBousai Wx Labのカード画像" />
     <link rel="icon" type="image/png" href="./assets/bousaiwxlab-site-icon.png" />
     <title>周囲より低い地形チェッカー | Bousai Wx Lab</title>
-    <link rel="stylesheet" href="./styles.css?v=20260905-5" />
+    <link rel="stylesheet" href="./styles.css?v=20260905-6" />
   </head>
   <body>
     <header class="topbar">
@@ -174,7 +174,7 @@
           <h2 id="pointHeading"><span class="section-index" aria-hidden="true">03</span>選択地点</h2>
           <dl>
             <div><dt>標高</dt><dd id="elevationValue">--</dd></div>
-            <div><dt>周囲平均</dt><dd id="surroundingValue">--</dd></div>
+            <div><dt>円内の陸地平均</dt><dd id="surroundingValue">--</dd></div>
             <div><dt>標高差（地点−周囲平均）</dt><dd id="depthValue">--</dd></div>
           </dl>
           <p id="coordinateValue" class="coordinate">地図をクリックまたはタップ</p>
@@ -182,13 +182,15 @@
 
         <section class="notice important-notice">
           <h2><span class="notice-mark" aria-hidden="true">!</span>この色が示すもの</h2>
-          <p>指定半径上の96〜256方向を16区画に分け、十分な方向を確認できた場合の平均標高より低い場所です。<strong>浸水想定や災害危険度ではありません。</strong></p>
+          <p>各格子を中心とする円の内側の陸地平均より低い場所です。円周だけではなく、円内の全域を面積で重み付けして集計します。海と標高の欠測は平均から除外します。標高のある湖面は含み、国外は約500mの全球標高で補います。<strong>浸水想定や災害危険度ではありません。</strong></p>
+          <p id="mapStampStatus" class="analysis-status" role="status" aria-live="polite">地図を読み込み中</p>
+          <p>広域では細かな標高の合計と陸地面積を事前集計して使います。円の境界は表示される集計格子の中心で判定する近似です。地点の標高と集計格子の細かさは異なります。灰色は範囲外・判定不能、無着色は海・欠測または着色下限未満です。</p>
           <p><a href="https://disaportal.gsi.go.jp/" target="_blank" rel="noopener noreferrer">ハザードマップポータルサイトを確認</a></p>
         </section>
 
         <details class="privacy-note">
           <summary>プライバシーと通信</summary>
-          <p>位置情報API、住所、Cookie、ブラウザ保存領域、アクセス解析は使いません。表示範囲の地図・標高タイルだけを国土地理院から取得します。ブログとXには、上部リンクを押した時だけ移動します。</p>
+          <p>位置情報API、住所、Cookie、ブラウザ保存領域、アクセス解析は使いません。表示範囲の地図・標高タイルを国土地理院から、事前集計データをこのサイトから取得します。ブログとXには、上部リンクを押した時だけ移動します。</p>
           <p>「リンク取得」は表示中心の緯度・経度、ズーム、判定・地図表示の設定、選択地点がある場合はその座標をURLへ含めます。サーバーや端末内へ保存はしませんが、リンクを受け取った人には表示位置が伝わるため、個人宅などを共有する前に確認してください。</p>
         </details>
       </aside>
@@ -198,7 +200,6 @@
           <canvas id="mapCanvas" width="1200" height="800" aria-label="周囲より低い地形の地図"></canvas>
           <div class="map-stamp" aria-live="polite">
             <strong id="mapStampTitle">周囲より低い量（半径500m・着色1m以上）</strong>
-            <span id="mapStampStatus" class="visually-hidden">地図を読み込み中</span>
           </div>
           <div class="map-zoom-controls" aria-label="地図操作">
             <button id="zoomInButton" type="button" aria-label="拡大" title="拡大">＋</button>
@@ -241,6 +242,6 @@
     </footer>
 
     <noscript>このツールの利用にはJavaScriptが必要です。</noscript>
-    <script type="module" src="./app.js?v=20260905-4"></script>
+    <script type="module" src="./app.js?v=20260905-6"></script>
   </body>
 </html>

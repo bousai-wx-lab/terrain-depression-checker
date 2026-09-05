@@ -197,6 +197,31 @@ def validate_binary_asset(path_label: str, data: bytes, record: dict) -> list[st
         findings.append(f"binary asset byte count mismatch: {path_label}")
     if digest_bytes(data) != record.get("sha256"):
         findings.append(f"binary asset hash mismatch: {path_label}")
+    if record.get("mime_type") == "application/gzip":
+        # Only metadata-free, bounded, numeric terrain summaries are permitted.
+        # Arbitrary compressed files, filenames, comments and extra members fail.
+        match = re.fullmatch(r"data/(area|global)-v1/([5-9]|10)/(\d+)/(\d+)\.json\.gz", path_label)
+        try:
+            if not match or data[:4] != b"\x1f\x8b\x08\x00" or data[4:8] != bytes(4):
+                raise ValueError("header or path")
+            decoder = zlib.decompressobj(31)
+            raw = decoder.decompress(data, 400001)
+            if len(raw) > 400000 or not decoder.eof or decoder.unused_data or decoder.unconsumed_tail:
+                raise ValueError("compressed bounds")
+            if len(raw) != record.get("raw_bytes"):
+                raise ValueError("raw byte count")
+            value = json.loads(raw)
+            _, z, x, y = match.groups()
+            if set(value) != {"v", "z", "x", "y", "n", "e", "a"} or [value[k] for k in ("v", "z", "x", "y", "n")] != [1, int(z), int(x), int(y), 128]:
+                raise ValueError("schema")
+            if len(value["e"]) != 16384 or len(value["a"]) != 16384:
+                raise ValueError("array length")
+            for e, a in zip(value["e"], value["a"]):
+                if type(e) is not int or type(a) is not int or not -500000 <= e <= 9000000 or not 0 <= a <= 1000000000 or (a == 0 and e != 0):
+                    raise ValueError("numeric range")
+        except (ValueError, TypeError, KeyError, zlib.error):
+            findings.append(f"invalid area summary: {path_label}")
+        return findings
     if record.get("mime_type") != "image/png":
         findings.append(f"unsupported binary asset MIME: {path_label}")
         return findings
@@ -245,7 +270,8 @@ def validate_worktree(allowlist: dict) -> list[str]:
         if mode & (stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH):
             findings.append(f"unexpected executable bit: {relative_text}")
         binary_record = binary_assets.get(relative_text)
-        if path.stat().st_size > int(allowlist["max_file_bytes"]) and binary_record is None:
+        text_limit = allowlist.get("large_text_files", {}).get(relative_text, allowlist["max_file_bytes"])
+        if path.stat().st_size > int(text_limit) and binary_record is None:
             findings.append(f"file exceeds size limit: {relative_text}")
         data = path.read_bytes()
         text = read_text_or_none(data)
@@ -332,6 +358,20 @@ def validate_git(allowlist: dict) -> list[str]:
     allowed_binary_hashes = {
         item["sha256"] for item in allowlist.get("allowed_binary_assets", [])
     }
+    large_text_hashes = set()
+    for relative, limit in allowlist.get("large_text_files", {}).items():
+        path = ROOT / relative
+        if relative not in allowlist["allowed_files"] or not path.is_file() or path.stat().st_size > limit:
+            findings.append(f"large text approval is invalid: {relative}")
+            continue
+        data = path.read_bytes()
+        if read_text_or_none(data) is not None:
+            large_text_hashes.add(digest_bytes(data))
+
+    names = run_git(["log", "--all", "--format=", "--name-only"], check=False).stdout.decode("utf-8", "replace")
+    findings.extend(scan_text("historical-paths", names, allowed_emails, allowed_hosts))
+    refs = run_git(["for-each-ref", "--format=%(refname)"], check=False).stdout.decode("utf-8", "replace")
+    findings.extend(scan_text("git-refs", refs, allowed_emails, allowed_hosts))
 
     remote_output = run_git(["remote", "-v"]).stdout.decode("utf-8", "replace")
     allowed_remote_urls = set(allowlist.get("allowed_remote_urls", []))
@@ -373,7 +413,9 @@ def validate_git(allowlist: dict) -> list[str]:
                 findings.append(f"Git object exceeds size limit: {object_id[:12]}")
                 continue
             oversized_data = run_git(["cat-file", "-p", object_id]).stdout
-            if digest_bytes(oversized_data) not in allowed_binary_hashes:
+            if digest_bytes(oversized_data) in large_text_hashes:
+                findings.extend(scan_text(f"large-git-object@{object_id[:12]}", oversized_data.decode("utf-8"), allowed_emails, allowed_hosts))
+            elif digest_bytes(oversized_data) not in allowed_binary_hashes:
                 findings.append(f"Git object exceeds size limit: {object_id[:12]}")
             continue
         if object_type not in {"blob", "commit", "tag", "tree"}:

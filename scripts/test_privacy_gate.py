@@ -4,6 +4,9 @@
 from __future__ import annotations
 
 import importlib.util
+import gzip
+import hashlib
+import json
 from copy import deepcopy
 from pathlib import Path
 
@@ -55,7 +58,23 @@ def main() -> int:
     wrong_size = deepcopy(record)
     wrong_size["width"] = 511
     assert MODULE.validate_binary_asset(record["path"], asset_data, wrong_size)
-    print("PRIVACY_GATE_TESTS_OK cases=9")
+    area={"v":1,"z":8,"x":1,"y":2,"n":128,"e":[0]*16384,"a":[0]*16384}
+    raw=json.dumps(area,separators=(",", ":")).encode()
+    data=gzip.compress(raw,mtime=0)
+    record={"path":"data/area-v1/8/1/2.json.gz","bytes":len(data),"sha256":hashlib.sha256(data).hexdigest(),"mime_type":"application/gzip","raw_bytes":len(raw)}
+    assert not MODULE.validate_binary_asset(record["path"],data,record)
+    for change in ['trailing','metadata','non-numeric','wrong-count','wrong-range']:
+        bad=deepcopy(area)
+        if change=='non-numeric':bad['e'][0]='unapproved text'
+        if change=='wrong-count':bad['e'].pop()
+        if change=='wrong-range':bad['a'][0]=1000000001
+        payload=json.dumps(bad,separators=(",", ":")).encode()
+        compressed=gzip.compress(payload,mtime=1 if change=='metadata' else 0)
+        if change=='trailing':compressed+=gzip.compress(b'extra',mtime=0)
+        altered={**record,'bytes':len(compressed),'sha256':hashlib.sha256(compressed).hexdigest(),'raw_bytes':len(payload)}
+        assert MODULE.validate_binary_asset(record['path'],compressed,altered)
+    assert MODULE.validate_binary_asset('data/area-v1/8/1/3.json.gz',data,record)
+    print("PRIVACY_GATE_TESTS_OK cases=16")
     return 0
 
 
