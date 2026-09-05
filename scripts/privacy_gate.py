@@ -368,6 +368,19 @@ def validate_git(allowlist: dict) -> list[str]:
         if read_text_or_none(data) is not None:
             large_text_hashes.add(digest_bytes(data))
 
+    # A new release changes its manifest. Keep checking historical versions of
+    # these exact approved paths, rather than accepting only today's hash.
+    large_paths = sorted(set(allowlist.get("large_text_files", {})) & set(allowlist["allowed_files"]))
+    if large_paths:
+        historical = run_git(["rev-list", "--objects", "--all", "--", *large_paths])
+        for line in historical.stdout.decode("utf-8", "strict").splitlines():
+            object_id, separator, relative = line.partition(" ")
+            if not separator or relative not in large_paths:
+                continue
+            data = run_git(["cat-file", "blob", object_id]).stdout
+            if len(data) <= allowlist["large_text_files"][relative] and read_text_or_none(data) is not None:
+                large_text_hashes.add(digest_bytes(data))
+
     names = run_git(["log", "--all", "--format=", "--name-only"], check=False).stdout.decode("utf-8", "replace")
     findings.extend(scan_text("historical-paths", names, allowed_emails, allowed_hosts))
     refs = run_git(["for-each-ref", "--format=%(refname)"], check=False).stdout.decode("utf-8", "replace")

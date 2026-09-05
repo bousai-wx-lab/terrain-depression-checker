@@ -2,14 +2,27 @@ name: Privacy gate
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'release/**']
   pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      safety_failure_test:
+        description: 'Test only: make the privacy gate reject a harmless unlisted file'
+        type: boolean
+        required: false
+        default: false
 
 permissions: {}
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   verify-public-surface:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     env:
       PYTHONDONTWRITEBYTECODE: "1"
     permissions:
@@ -18,15 +31,75 @@ jobs:
       - name: Check out the complete repository without retained credentials
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
+      - name: Add a harmless rejection probe on explicitly requested test runs
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.safety_failure_test }}
+        run: touch publication-block-test.txt
       - name: Verify release inventory, privacy, browser safety, and Git history
         run: python3 scripts/privacy_gate.py
       - name: Verify privacy scanner regressions
         run: python3 scripts/test_privacy_gate.py
+      - name: Verify artifact isolation and rejection regressions
+        run: python3 scripts/test_pages_release.py
       - name: Verify terrain calculations
         run: node tests/terrain.test.mjs
       - name: Verify full-area mean against independent disk enumeration
         run: node tests/area.test.mjs
       - name: Verify all discrete share and display combinations
         run: node tests/display-contract.test.mjs
+
+  build-pages-artifact:
+    needs: verify-public-surface
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - name: Check out the same verified commit without retained credentials
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Package only allowlisted bytes and independently verify the archive
+        run: python3 scripts/build_pages_artifact.py --output-dir "$RUNNER_TEMP/verified-pages"
+      - name: Upload the verified Pages archive only from main
+        if: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/verified-pages/artifact.tar
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+
+  deploy-pages:
+    needs: [verify-public-surface, build-pages-artifact]
+    if: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && needs.verify-public-surface.result == 'success' && needs.build-pages-artifact.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Refuse to deploy a superseded main commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SHA: ${{ github.sha }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          current_sha="$(gh api "repos/$REPOSITORY/branches/main" --jq '.commit.sha')"
+          test "$current_sha" = "$EXPECTED_SHA"
+      - name: Deploy exactly this successful run's verified archive
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+        with:
+          artifact_name: github-pages-${{ github.run_id }}-${{ github.run_attempt }}
