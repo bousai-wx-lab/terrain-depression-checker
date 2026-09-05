@@ -44827,6 +44827,14 @@
     {
       "name": "github-actions[bot]",
       "email": "41898282+github-actions[bot]@users.noreply.github.com"
+    },
+    {
+      "name": "nature-wx-lab",
+      "email": "289840956+nature-wx-lab@users.noreply.github.com"
+    },
+    {
+      "name": "GitHub",
+      "email": "noreply@github.com"
     }
   ],
   "allowed_remote_urls": [
