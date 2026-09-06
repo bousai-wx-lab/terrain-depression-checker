@@ -41,6 +41,11 @@ for (const id of ["settingsButton", "settingsPanel", "settingsCloseButton", "mor
   assert.ok(ids.includes(id));
 }
 assert.ok(html.includes('content="width=device-width, initial-scale=1"'));
+const radiusOptions = html.match(/<select id="radiusSelect">([\s\S]*?)<\/select>/)?.[1] || "";
+const thresholdOptions = html.match(/<select id="thresholdSelect">([\s\S]*?)<\/select>/)?.[1] || "";
+assert.match(radiusOptions, /<option value="500" selected>500 m<\/option>/);
+assert.match(thresholdOptions, /<option value="0\.5" selected>0\.5 m以上<\/option>/);
+assert.ok(html.includes('id="mapStampTitle">周囲より低い量（半径500m・着色0.5m以上）'));
 assert.ok(!html.includes("user-scalable=no"));
 assert.ok(!html.includes("maximum-scale=1"));
 assert.ok(css.includes("--mobile-viewport-height"));
@@ -55,4 +60,4 @@ assert.ok(app.includes('lostpointercapture", (event) => finishPointer(event, { c
 assert.ok(app.includes('visibilitychange'));
 assert.ok(app.includes('visualViewport?.addEventListener("resize"'));
 
-process.stdout.write("MOBILE_INTERACTION_TESTS_OK slow_pinch_steps=102 bounds=2 midpoint=1 ui_contract=18\n");
+process.stdout.write("MOBILE_INTERACTION_TESTS_OK slow_pinch_steps=102 bounds=2 midpoint=1 ui_contract=21\n");

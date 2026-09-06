@@ -123,8 +123,8 @@
           <label>
             <span>色を付ける差</span>
             <select id="thresholdSelect">
-              <option value="0.5">0.5 m以上</option>
-              <option value="1" selected>1 m以上</option>
+              <option value="0.5" selected>0.5 m以上</option>
+              <option value="1">1 m以上</option>
               <option value="2">2 m以上</option>
               <option value="5">5 m以上</option>
             </select>
@@ -221,7 +221,7 @@
         <div id="canvasWrap" class="canvas-wrap">
           <canvas id="mapCanvas" width="1200" height="800" aria-label="周囲より低い地形の地図"></canvas>
           <div class="map-stamp" aria-live="polite">
-            <strong id="mapStampTitle">周囲より低い量（半径500m・着色1m以上）</strong>
+            <strong id="mapStampTitle">周囲より低い量（半径500m・着色0.5m以上）</strong>
           </div>
           <div class="map-zoom-controls" aria-label="地図操作">
             <button id="zoomInButton" type="button" aria-label="拡大" title="拡大">＋</button>
