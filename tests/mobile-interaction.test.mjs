@@ -41,7 +41,7 @@ for (const id of ["usageGuideLink", "settingsButton", "settingsPanel", "settings
   assert.ok(ids.includes(id));
 }
 assert.ok(html.includes('content="width=device-width, initial-scale=1"'));
-assert.ok(html.includes('href="./styles.css?v=20260920-1"'));
+assert.ok(html.includes('href="./styles.css?v=20260920-2"'));
 const usageGuideLink = html.match(/<a\s+id="usageGuideLink"[\s\S]*?>使い方<\/a>/)?.[0] || "";
 assert.ok(usageGuideLink.includes('href="https://bousai-wx-lab.com/terrain-depression-checker/"'));
 assert.ok(usageGuideLink.includes('target="_blank"'));
@@ -58,6 +58,7 @@ assert.ok(css.includes("--mobile-viewport-height"));
 assert.ok(css.includes("100dvh"));
 assert.ok(css.includes("safe-area-inset-bottom"));
 assert.ok(css.includes(".tool-chip:focus-visible"));
+assert.match(css, /\.tool-chip\s*\{[\s\S]*?min-height:\s*28px;[\s\S]*?padding:\s*5px 11px;[\s\S]*?font-size:\s*11px;/);
 assert.ok(css.includes(".controls.is-open"));
 assert.ok(css.includes("(max-width: 900px) and (max-height: 520px)"));
 assert.ok(!css.includes("height: 590px"));

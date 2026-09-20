@@ -199,22 +199,24 @@ h1 {
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  padding: 3px 7px;
-  border: 1px solid rgb(132 220 235 / 55%);
+  min-height: 28px;
+  padding: 5px 11px;
+  border: 1px solid rgb(157 231 244 / 88%);
   border-radius: 999px;
-  background: rgb(42 160 176 / 17%);
-  color: #dffaff;
-  font-size: 9px;
+  background: linear-gradient(135deg, rgb(25 165 202 / 67%), rgb(18 105 151 / 76%));
+  box-shadow: 0 2px 8px rgb(0 26 49 / 22%), inset 0 1px 0 rgb(255 255 255 / 18%);
+  color: #e7fbff;
+  font-size: 11px;
   font-weight: 800;
-  letter-spacing: .08em;
+  letter-spacing: .07em;
   line-height: 1.2;
   text-decoration: none;
   cursor: pointer;
 }
 
 .tool-chip:hover {
-  border-color: #bde9f5;
-  background: rgb(255 255 255 / 17%);
+  border-color: #fff;
+  background: linear-gradient(135deg, rgb(37 187 220 / 80%), rgb(22 121 169 / 88%));
   color: #fff;
 }
 
