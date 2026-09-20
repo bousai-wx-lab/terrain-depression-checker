@@ -195,7 +195,10 @@ h1 {
 }
 
 .tool-chip {
+  display: inline-flex;
   flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
   padding: 3px 7px;
   border: 1px solid rgb(132 220 235 / 55%);
   border-radius: 999px;
@@ -205,6 +208,19 @@ h1 {
   font-weight: 800;
   letter-spacing: .08em;
   line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.tool-chip:hover {
+  border-color: #bde9f5;
+  background: rgb(255 255 255 / 17%);
+  color: #fff;
+}
+
+.tool-chip:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
 }
 
 .tool-subtitle {
