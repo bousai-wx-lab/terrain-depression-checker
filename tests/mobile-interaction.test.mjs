@@ -37,10 +37,16 @@ const css = readFileSync(new URL("../styles.css", import.meta.url), "utf8");
 const app = readFileSync(new URL("../app.js", import.meta.url), "utf8");
 const ids = [...html.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]);
 assert.equal(new Set(ids).size, ids.length);
-for (const id of ["settingsButton", "settingsPanel", "settingsCloseButton", "moreButton", "legendButton", "mobilePointSummary"]) {
+for (const id of ["usageGuideLink", "settingsButton", "settingsPanel", "settingsCloseButton", "moreButton", "legendButton", "mobilePointSummary"]) {
   assert.ok(ids.includes(id));
 }
 assert.ok(html.includes('content="width=device-width, initial-scale=1"'));
+assert.ok(html.includes('href="./styles.css?v=20260920-1"'));
+const usageGuideLink = html.match(/<a\s+id="usageGuideLink"[\s\S]*?>使い方<\/a>/)?.[0] || "";
+assert.ok(usageGuideLink.includes('href="https://bousai-wx-lab.com/terrain-depression-checker/"'));
+assert.ok(usageGuideLink.includes('target="_blank"'));
+assert.ok(usageGuideLink.includes('rel="noopener noreferrer"'));
+assert.ok(!html.includes(">地形判読<"));
 const radiusOptions = html.match(/<select id="radiusSelect">([\s\S]*?)<\/select>/)?.[1] || "";
 const thresholdOptions = html.match(/<select id="thresholdSelect">([\s\S]*?)<\/select>/)?.[1] || "";
 assert.match(radiusOptions, /<option value="500" selected>500 m<\/option>/);
@@ -51,6 +57,7 @@ assert.ok(!html.includes("maximum-scale=1"));
 assert.ok(css.includes("--mobile-viewport-height"));
 assert.ok(css.includes("100dvh"));
 assert.ok(css.includes("safe-area-inset-bottom"));
+assert.ok(css.includes(".tool-chip:focus-visible"));
 assert.ok(css.includes(".controls.is-open"));
 assert.ok(css.includes("(max-width: 900px) and (max-height: 520px)"));
 assert.ok(!css.includes("height: 590px"));
@@ -60,4 +67,4 @@ assert.ok(app.includes('lostpointercapture", (event) => finishPointer(event, { c
 assert.ok(app.includes('visibilitychange'));
 assert.ok(app.includes('visualViewport?.addEventListener("resize"'));
 
-process.stdout.write("MOBILE_INTERACTION_TESTS_OK slow_pinch_steps=102 bounds=2 midpoint=1 ui_contract=21\n");
+process.stdout.write("MOBILE_INTERACTION_TESTS_OK slow_pinch_steps=102 bounds=2 midpoint=1 ui_contract=28\n");

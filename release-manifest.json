@@ -33625,10 +33625,10 @@
       "sha256": "9668a7fca9a14ff50d0be3391e0bc3eb4dd004d5b4cdf9ab9412c9152a9df93b"
     },
     {
-      "bytes": 19161,
+      "bytes": 19539,
       "mime_type": "text/html",
       "path": "index.html",
-      "sha256": "1a6e0bb04d200251693b5fef4ee6af381b92c1457350e875dc238938dfcbd642"
+      "sha256": "ced881795bfe7fe255328fa0e5b75a993a07c34e45c208a28274d5a966b58a3e"
     },
     {
       "bytes": 1033,
@@ -33697,10 +33697,10 @@
       "sha256": "f288e929f2d608891458858ee665dd5ae11775d19e6277d613cb56cca192aa83"
     },
     {
-      "bytes": 27614,
+      "bytes": 27912,
       "mime_type": "text/css",
       "path": "styles.css",
-      "sha256": "f9b968250337123797d06c7d0f0391b469cda89205a5c8cfb6ca839c555004af"
+      "sha256": "2500a5c4abc0c252c4b4f4a57ec86d76b6906b4a0eb4e1431480cecc9760611e"
     },
     {
       "bytes": 12774,
@@ -33727,10 +33727,10 @@
       "sha256": "d2e5092919f6dbe3f4ab4dc2ceb26ad15e8dfa78341636619fc6ab8cb3c849d0"
     },
     {
-      "bytes": 3693,
+      "bytes": 4188,
       "mime_type": "text/javascript",
       "path": "tests/mobile-interaction.test.mjs",
-      "sha256": "b624b8e3e0215136469b327a8253d11ede4fa635124be0d9d53c505ac7ef201d"
+      "sha256": "ee25009a7367e1e874a5771e752abb99cafb0b3a6a245747b27d286c34092155"
     },
     {
       "bytes": 8091,
@@ -33739,7 +33739,7 @@
       "sha256": "bd35bb8f88084be3b0453c98ddb9a02f921fece9e7d72fd2b54cc471eb68224d"
     }
   ],
-  "generated_at_utc": "2026-09-06T05:29:30+00:00",
+  "generated_at_utc": "2026-09-20T06:37:00+00:00",
   "schema_version": 1,
   "tool_slug": "terrain-depression-checker"
 }
