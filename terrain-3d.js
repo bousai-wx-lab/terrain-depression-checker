@@ -91,7 +91,7 @@ export class Terrain3DRenderer {
       pitch: view.pitch, bearing: view.bearing, minZoom: 5, maxZoom: 18, maxPitch: 70,
       maxBounds: [[118, 20], [154, 48]], preserveDrawingBuffer: true,
       attributionControl: false, maplibreLogo: false, aroundCenter: false,
-      pitchWithRotate: true, zoomSnap: 1,
+      pitchWithRotate: true, touchPitch: true, touchZoomRotate: true, zoomSnap: 1,
     });
     this.map.on("load", () => {
       this.loaded = true;

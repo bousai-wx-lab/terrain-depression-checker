@@ -33,7 +33,7 @@
     <link rel="icon" type="image/png" href="./assets/bousaiwxlab-site-icon.png" />
     <title>周囲より低い地形チェッカー | Bousai Wx Lab</title>
     <link rel="stylesheet" href="./vendor/maplibre/maplibre-gl.css" />
-    <link rel="stylesheet" href="./styles.css?v=20260923-4" />
+    <link rel="stylesheet" href="./styles.css?v=20260924-1" />
   </head>
   <body>
     <header class="topbar">
@@ -247,7 +247,7 @@
             <button id="threeDButton" type="button" aria-pressed="false" title="立体地形を見る">3D</button>
             <button id="twoDButton" type="button" title="北を上にして平面地図へ戻す">北向き2D</button>
           </div>
-          <p id="terrain3dHint" class="terrain-3d-hint" hidden>ドラッグで移動、Ctrl＋ドラッグで回転・傾き、ホイールで拡大縮小。高さの誇張なし。</p>
+          <p id="terrain3dHint" class="terrain-3d-hint" hidden><span class="mouse-hint">ドラッグで移動、Ctrl＋ドラッグで回転・傾き、ホイールで拡大縮小。</span><span class="touch-hint">1本指で移動、2本指で回転・傾き・拡大縮小。</span> 高さの誇張なし。</p>
           <button id="legendButton" class="legend-toggle" type="button" aria-controls="mapLegend" aria-expanded="false">
             <strong>凡例</strong>
             <small>危険度ではありません</small>
@@ -274,7 +274,7 @@
             <span id="mapScaleLabel">500 m</span>
             <i id="mapScaleLine" aria-hidden="true"></i>
           </div>
-          <div class="mobile-map-hint">1本指で移動・2本指で拡大縮小</div>
+          <div class="mobile-map-hint">1本指で移動・2本指で回転／傾き／拡大縮小</div>
           <a
             class="gsi-attribution"
             href="https://maps.gsi.go.jp/development/ichiran.html"
@@ -303,6 +303,6 @@
 
     <noscript>このツールの利用にはJavaScriptが必要です。</noscript>
     <script type="module" src="./analytics-consent.js?v=20260905-1" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script type="module" src="./app.js?v=20260923-4" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script type="module" src="./app.js?v=20260924-1" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   </body>
 </html>

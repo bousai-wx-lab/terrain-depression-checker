@@ -8,7 +8,31 @@ export function pointerPairMetrics(points) {
     distance,
     x: (first.x + second.x) / 2,
     y: (first.y + second.y) / 2,
+    angle: Math.atan2(second.y - first.y, second.x - first.x) * 180 / Math.PI,
   };
+}
+
+export function angleDelta(from, to) {
+  return ((to - from + 180) % 360 + 360) % 360 - 180;
+}
+
+export function classifyTwoFingerGesture(gesture, metrics, points) {
+  if (!gesture || !metrics || points.length < 2) return null;
+  const [first, second] = points;
+  const [startFirst, startSecond] = gesture.startPoints;
+  const firstX = first.x - startFirst.x, firstY = first.y - startFirst.y;
+  const secondX = second.x - startSecond.x, secondY = second.y - startSecond.y;
+  const bothMoved = Math.hypot(firstX, firstY) >= 6 && Math.hypot(secondX, secondY) >= 6;
+  const twist = Math.abs(angleDelta(gesture.startAngle, metrics.angle));
+  const distanceChange = Math.abs(Math.log(metrics.distance / gesture.startDistance));
+  const x = metrics.x - gesture.startX, y = metrics.y - gesture.startY;
+  if (distanceChange >= Math.log(1.08)) return "pinch";
+  if (twist >= 12 && (bothMoved || twist >= 25)) return "rotate";
+  if (bothMoved && Math.sign(firstY) === Math.sign(secondY) &&
+      Math.min(Math.abs(firstY), Math.abs(secondY)) >= 8 &&
+      Math.abs(y) >= 12 && Math.abs(y) > Math.abs(x) * 1.2) return "tilt";
+  if (bothMoved && Math.hypot(x, y) >= 12) return "pan";
+  return null;
 }
 
 export function beginPinchGesture(metrics, zoom) {

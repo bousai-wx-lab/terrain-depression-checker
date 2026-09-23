@@ -704,7 +704,8 @@ dd {
 }
 
 .canvas-wrap.is-3d #mapCanvas {
-  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .terrain-3d-canvas {
@@ -821,6 +822,10 @@ dd {
 .terrain-3d-hint[hidden],
 .canvas-wrap.is-3d .map-scale,
 .canvas-wrap.is-3d .mobile-map-hint {
+  display: none;
+}
+
+.terrain-3d-hint .touch-hint {
   display: none;
 }
 
@@ -1452,6 +1457,20 @@ dd {
 
   .mobile-map-hint {
     display: block;
+  }
+
+  .terrain-3d-hint {
+    right: 77px;
+    bottom: max(25px, calc(env(safe-area-inset-bottom) + 17px));
+    max-width: calc(100% - 168px);
+  }
+
+  .terrain-3d-hint .mouse-hint {
+    display: none;
+  }
+
+  .terrain-3d-hint .touch-hint {
+    display: inline;
   }
 
   .page-footer {

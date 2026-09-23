@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { beginPinchGesture, pinchZoomFromStart, pointerPairMetrics } from "../interaction.js";
+import { angleDelta, beginPinchGesture, classifyTwoFingerGesture, pinchZoomFromStart, pointerPairMetrics } from "../interaction.js";
 
 function metricsForDistance(distance, x = 180, y = 260) {
   return pointerPairMetrics([
@@ -26,11 +26,27 @@ assert.equal(inwardZooms.at(-1), 13);
 assert.ok(inward.slice(1).every((distance, index) => distance / inward[index] > 0.97));
 
 const movedMidpoint = metricsForDistance(120, 42, 73);
-assert.deepEqual(movedMidpoint, { distance: 120, x: 42, y: 73 });
+assert.deepEqual(movedMidpoint, { distance: 120, x: 42, y: 73, angle: 0 });
 assert.equal(pinchZoomFromStart(beginPinchGesture(metricsForDistance(100), 18), metricsForDistance(300), 5, 18), 18);
 assert.equal(pinchZoomFromStart(beginPinchGesture(metricsForDistance(200), 5), metricsForDistance(50), 5, 18), 5);
 assert.equal(pinchZoomFromStart(beginPinchGesture(metricsForDistance(100), 14), metricsForDistance(101), 5, 18), 14);
 assert.equal(beginPinchGesture({ distance: 0, x: 0, y: 0 }, 14), null);
+
+const startPoints = [{ x: 100, y: 200 }, { x: 200, y: 200 }];
+const start = pointerPairMetrics(startPoints);
+const twoFingerGesture = {
+  ...beginPinchGesture(start, 14), startX: start.x, startY: start.y,
+  startAngle: start.angle, startPoints,
+};
+const classify = (points) => classifyTwoFingerGesture(twoFingerGesture, pointerPairMetrics(points), points);
+assert.equal(classify([{ x: 100, y: 180 }, { x: 200, y: 200 }]), null);
+assert.equal(classify([{ x: 100, y: 170 }, { x: 200, y: 170 }]), "tilt");
+assert.equal(classify([{ x: 100, y: 230 }, { x: 200, y: 230 }]), "tilt");
+assert.equal(classify([{ x: 108, y: 180 }, { x: 192, y: 220 }]), "rotate");
+assert.equal(classify([{ x: 75, y: 200 }, { x: 225, y: 200 }]), "pinch");
+assert.equal(classify([{ x: 65, y: 200 }, { x: 165, y: 200 }]), "pan");
+assert.equal(angleDelta(170, -170), 20);
+assert.equal(angleDelta(-170, 170), -20);
 
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const css = readFileSync(new URL("../styles.css", import.meta.url), "utf8");
@@ -41,7 +57,7 @@ for (const id of ["usageGuideLink", "settingsButton", "settingsPanel", "settings
   assert.ok(ids.includes(id));
 }
 assert.ok(html.includes('content="width=device-width, initial-scale=1"'));
-assert.ok(html.includes('href="./styles.css?v=20260923-4"'));
+assert.ok(html.includes('href="./styles.css?v=20260924-1"'));
 assert.ok(html.includes('id="threeDButton" type="button" aria-pressed="false"'));
 const usageGuideLink = html.match(/<a\s+id="usageGuideLink"[\s\S]*?>使い方<\/a>/)?.[0] || "";
 assert.ok(usageGuideLink.includes('href="https://bousai-wx-lab.com/terrain-depression-checker/"'));
