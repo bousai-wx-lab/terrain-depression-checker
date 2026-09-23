@@ -80,7 +80,7 @@ assert.equal(scaleAtZoom5.label, "200 km");
 assert.ok(scaleAtZoom5.pixels >= 40 && scaleAtZoom5.pixels <= 120);
 const destination = destinationPoint(139.767, 35.681, 300000, Math.PI / 3);
 assert.ok(Math.abs(greatCircleDistanceMeters({ longitude: 139.767, latitude: 35.681 }, destination) - 300000) < 0.001);
-const auditedRadii = [250, 500, 1000, 10000, 50000, 100000, 150000, 200000, 300000];
+const auditedRadii = [250, 500, 1000, 5000, 10000, 50000, 100000, 150000, 200000, 300000];
 let geodesicCases = 0;
 for (const latitude of [20, 35.681, 48]) {
   for (const radius of auditedRadii) {

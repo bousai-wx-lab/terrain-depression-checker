@@ -118,8 +118,9 @@
             <span>周囲として比べる半径</span>
             <select id="radiusSelect">
               <option value="250">250 m</option>
-              <option value="500" selected>500 m</option>
-              <option value="1000">1 km</option>
+              <option value="500">500 m</option>
+              <option value="1000" selected>1 km</option>
+              <option value="5000">5 km</option>
               <option value="10000">10 km</option>
               <option value="50000">50 km</option>
               <option value="100000">100 km</option>
@@ -229,7 +230,7 @@
         <div id="canvasWrap" class="canvas-wrap">
           <canvas id="mapCanvas" width="1200" height="800" aria-label="周囲より低い地形の地図"></canvas>
           <div class="map-stamp" aria-live="polite">
-            <strong id="mapStampTitle">周囲より低い量（半径500m・着色0.5m以上）</strong>
+            <strong id="mapStampTitle">周囲より低い量（半径1km・着色0.5m以上）</strong>
           </div>
           <div class="map-zoom-controls" aria-label="地図操作">
             <button id="zoomInButton" type="button" aria-label="拡大" title="拡大">＋</button>
@@ -292,6 +293,6 @@
 
     <noscript>このツールの利用にはJavaScriptが必要です。</noscript>
     <script type="module" src="./analytics-consent.js?v=20260905-1" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script type="module" src="./app.js?v=20260905-9" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script type="module" src="./app.js?v=20260923-1" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   </body>
 </html>

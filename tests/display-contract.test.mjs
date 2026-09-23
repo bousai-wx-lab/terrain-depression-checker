@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {parseShareState,serializeShareState,depthColor,elevationDifference} from '../terrain.js';
 let cases=0;
-for(const radius of [250,500,1000,10000,50000,100000,150000,200000,300000])
+for(const radius of [250,500,1000,5000,10000,50000,100000,150000,200000,300000])
 for(let zoom=5;zoom<=18;zoom++)for(const threshold of [.5,1,2,5])
 for(const baseMap of ['std','pale','hillshademap'])for(const terrain of [false,true])
 for(const terrainStyle of ['mono','color'])for(const centerMark of [false,true])for(const radiusGuide of [false,true]) {

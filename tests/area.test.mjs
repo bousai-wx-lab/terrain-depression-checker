@@ -45,7 +45,7 @@ for(const latitude of [20,35.68,45.5,48])for(const zoom of [8,11,15]) {
 }
 // Every usable view has a complete halo, at both visible edges and poles of
 // its circular neighbourhood. Unusable zoom/radius pairs are not rendered.
-const radii=[250,500,1000,10000,50000,100000,150000,200000,300000];
+const radii=[250,500,1000,5000,10000,50000,100000,150000,200000,300000];
 for(const latitude of [20,35.68,48])for(let zoom=5;zoom<=18;zoom++)for(const radius of radii)for(const size of [[911,586],[374,500],[1600,900]]) {
   const view={longitude:139,latitude,zoom,radius,width:size[0],height:size[1]},p=chooseAreaPlan(view);
   if(!p.usable){cases++;continue;}

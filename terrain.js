@@ -16,7 +16,7 @@ export const TILE_MAX_ZOOM = Object.freeze({
   hillshademap: 16,
 });
 
-const SHARE_RADIUS_VALUES = new Set([250, 500, 1000, 10000, 50000, 100000, 150000, 200000, 300000]);
+const SHARE_RADIUS_VALUES = new Set([250, 500, 1000, 5000, 10000, 50000, 100000, 150000, 200000, 300000]);
 const SHARE_THRESHOLD_VALUES = new Set([0.5, 1, 2, 5]);
 const SHARE_BASE_MAP_VALUES = new Set(["std", "pale", "hillshademap"]);
 const SHARE_TERRAIN_STYLE_VALUES = new Set(["color", "mono"]);
