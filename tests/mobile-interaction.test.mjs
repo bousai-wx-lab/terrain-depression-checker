@@ -41,7 +41,7 @@ for (const id of ["usageGuideLink", "settingsButton", "settingsPanel", "settings
   assert.ok(ids.includes(id));
 }
 assert.ok(html.includes('content="width=device-width, initial-scale=1"'));
-assert.ok(html.includes('href="./styles.css?v=20260923-3"'));
+assert.ok(html.includes('href="./styles.css?v=20260923-4"'));
 assert.ok(html.includes('id="threeDButton" type="button" aria-pressed="false"'));
 const usageGuideLink = html.match(/<a\s+id="usageGuideLink"[\s\S]*?>使い方<\/a>/)?.[0] || "";
 assert.ok(usageGuideLink.includes('href="https://bousai-wx-lab.com/terrain-depression-checker/"'));

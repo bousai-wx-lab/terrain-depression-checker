@@ -4,7 +4,7 @@ import {
   serializeShareState, tileSourceZoom, worldPixelToLonLat,
 } from "./terrain.js?v=20260923-2";
 import { beginPinchGesture, pinchZoomFromStart, pointerPairMetrics } from "./interaction.js?v=20260905-1";
-import { normalizeBearing, Terrain3DRenderer } from "./terrain-3d.js?v=20260923-1";
+import { normalizeBearing, Terrain3DRenderer } from "./terrain-3d.js?v=20260923-4";
 const GSI_ORIGIN = "https://cyberjapandata.gsi.go.jp";
 
 const INITIAL_VIEW = Object.freeze({ longitude: 139.767, latitude: 35.681, zoom: 14 });
@@ -80,8 +80,6 @@ const state = {
   pointSequence: 0,
   pendingSignature: '',
   analysis: null,
-  surface: null,
-  surfaceError: false,
   analysisSequence: 0,
   analyzeTimer: 0,
   drawPending: false,
@@ -96,8 +94,8 @@ const state = {
   bearing: 0,
   pitch: 0,
   renderer3d: null,
-  orbitGesture: null,
   compassGesture: null,
+  ctrlFrom2D: null,
 };
 
 function setElementInert(element, inert) {
@@ -327,6 +325,10 @@ function currentShareUrl() {
 
 function setZoom(nextZoom, anchorX, anchorY) {
   const zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, Math.round(nextZoom)));
+  if (state.view3d && state.renderer3d) {
+    state.renderer3d.setZoom(zoom);
+    return;
+  }
   if (zoom === state.zoom) return;
   const size = canvasCssSize();
   const x = Number.isFinite(anchorX) ? anchorX : size.width / 2;
@@ -358,6 +360,8 @@ function panBy(deltaX, deltaY) {
 function resetView() {
   state.longitude = INITIAL_VIEW.longitude;
   state.latitude = INITIAL_VIEW.latitude;
+  if (state.view3d) state.renderer3d?.setCenter(state.longitude, state.latitude);
+  else invalidateAnalysis("初期地点へ移動しました");
   state.zoom = INITIAL_VIEW.zoom;
   updateZoomControl();
   invalidateAnalysis("最初の範囲へ戻しました");
@@ -512,12 +516,14 @@ function drawCenterGuides() {
 function draw() {
   state.drawPending = false;
   resizeCanvas();
-  drawBaseMap();
-  drawTerrainLayer();
-  drawAnalysis();
-  drawCenterGuides();
+  if (!state.view3d) {
+    drawBaseMap();
+    drawTerrainLayer();
+    drawAnalysis();
+    drawCenterGuides();
+  }
   updateScaleBar();
-  if (state.view3d && state.renderer3d) state.renderer3d.updateTexture(elements.canvas);
+  if (state.view3d && state.analysis && state.renderer3d) update3DOverlay();
 }
 
 function scheduleDraw() {
@@ -565,9 +571,6 @@ function invalidateAnalysis(message, { preserveSelection = false } = {}) {
   analysisWorker.postMessage({ type: "cancel", id: state.analysisSequence });
   state.pointSequence += 1;
   state.analysis = null;
-  state.surface = null;
-  state.surfaceError = false;
-  state.renderer3d?.clearGeometry();
   elements.download.disabled = true;
   elements.canvasWrap.dataset.ready = "false";
   clearPointReadout({ clearSelection: !preserveSelection });
@@ -629,29 +632,9 @@ analysisWorker.addEventListener("message", ({ data }) => {
     return;
   }
   if (data.id !== state.analysisSequence || state.pendingSignature !== analysisSignature()) return;
-  if (data.type === "surface") {
-    state.surface = data;
-    state.surfaceError = false;
-    if (state.view3d && state.renderer3d) {
-      const { width, height } = renderCssSize();
-      try {
-        state.renderer3d.setGeometry(data, width, height, metersPerPixel(state.latitude, state.zoom));
-      } catch {
-        showLoading("3D地形を描画できませんでした。北向き2Dへ戻して確認してください");
-      }
-    }
-    if (state.analysis?.validCount) hideLoading();
-    return;
-  }
-  if (data.type === "surface-error") {
-    state.surfaceError = true;
-    if (state.view3d) showLoading("3D用の標高を読み込めませんでした。再試行または北向き2Dで確認してください");
-    return;
-  }
   if (data.type === "progress") { showLoading(data.message); updateStamp(data.message); return; }
   if (data.type === "error" || data.type === "unavailable") {
     state.analysis = null;
-    state.renderer3d?.clearGeometry();
     updateStamp(data.message); showLoading(data.message);
     elements.canvasWrap.dataset.ready = "error";
     if (data.type === "error") {
@@ -672,8 +655,7 @@ analysisWorker.addEventListener("message", ({ data }) => {
   for (const key of ["elapsedMs", "fetchMs", "calculationMs", "prefixMiB", "analysisZoom", "validCount"]) elements.canvasWrap.dataset[key] = String(result[key]);
   elements.download.disabled = false;
   updateStamp(analysisMessage(result), result.gridSpacing);
-  if (result.validCount && !state.surfaceError && (!state.view3d || state.surface)) hideLoading();
-  else if (state.view3d && !state.surface && !state.surfaceError) showLoading("3D地形を読み込み中");
+  if (result.validCount) hideLoading();
   else showLoading("この範囲には判定できる陸地がありません。灰色は範囲外・判定不能です");
   restoreSelectedPoint(); scheduleDraw();
 });
@@ -692,9 +674,6 @@ function analyzeVisibleArea() {
   analysisWorker.postMessage({ type: "analyze", id, view: {
     longitude: state.longitude, latitude: state.latitude, zoom: state.zoom,
     radius: Number(elements.radius.value), width, height,
-  } });
-  if (state.view3d) analysisWorker.postMessage({ type: "surface", id, view: {
-    longitude: state.longitude, latitude: state.latitude, zoom: state.zoom, width, height,
   } });
 }
 
@@ -783,11 +762,72 @@ function set3DOrientation(pitch, bearing) {
   elements.compassDial.style.setProperty("--bearing-rotation", `${-state.bearing}deg`);
 }
 
+function threeDOptions() {
+  return {
+    baseMap: elements.baseMap.value,
+    baseMapOpacity: Number(elements.baseMapOpacity.value) / 100,
+    terrain: elements.terrainToggle.checked,
+    terrainStyle: elements.terrainStyle.value,
+    terrainOpacity: Number(elements.terrainOpacity.value) / 100,
+    depressionOpacity: Number(elements.opacity.value) / 100,
+    radiusGuide: elements.radiusGuideToggle.checked,
+    centerMark: elements.centerMarkToggle.checked,
+    radius: Number(elements.radius.value),
+  };
+}
+
+function update3DOverlay() {
+  if (!state.view3d || !state.analysis || !state.renderer3d) return;
+  const { width, height } = renderCssSize();
+  state.renderer3d.updateOverlay(state.analysis, state.longitude, state.latitude, state.zoom, width, height);
+}
+
+function sync3DCamera(camera, analyze) {
+  if (!state.view3d) return;
+  state.pitch = camera.pitch;
+  state.bearing = normalizeBearing(camera.bearing);
+  elements.compassDial.style.setProperty("--bearing-rotation", `${-state.bearing}deg`);
+  if (!analyze) return;
+  const zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, Math.round(camera.zoom)));
+  if (Math.abs(camera.zoom - zoom) > 0.001) {
+    state.renderer3d.map.jumpTo({ zoom });
+    return;
+  }
+  const changed = zoom !== state.zoom ||
+    Math.abs(camera.longitude - state.longitude) > 1e-7 ||
+    Math.abs(camera.latitude - state.latitude) > 1e-7;
+  if (!changed) return;
+  state.zoom = zoom;
+  state.longitude = camera.longitude;
+  state.latitude = camera.latitude;
+  clampView();
+  updateZoomControl();
+  invalidateAnalysis("表示範囲が変わりました", { preserveSelection: true });
+}
+
 function enter3D({ restore = false } = {}) {
   try {
-    state.renderer3d ??= new Terrain3DRenderer(elements.canvas3d);
+    elements.canvas3d.hidden = false;
+    const existing = Boolean(state.renderer3d);
+    state.renderer3d ??= new Terrain3DRenderer(elements.canvas3d, {
+      longitude: state.longitude, latitude: state.latitude, zoom: state.zoom,
+      pitch: restore ? state.pitch : 55, bearing: restore ? state.bearing : 0,
+    }, {
+      onMove: (camera) => sync3DCamera(camera, false),
+      onMoveEnd: (camera) => sync3DCamera(camera, true),
+      onPick: (position) => {
+        state.selectedPoint = { longitude: position.lng, latitude: position.lat };
+        requestSelectedPoint();
+      },
+      onError: (error) => console.warn("3D terrain:", error?.message || error),
+    });
+    if (existing) state.renderer3d.map.jumpTo({
+      center: [state.longitude, state.latitude], zoom: state.zoom,
+      pitch: restore ? state.pitch : 55, bearing: restore ? state.bearing : 0,
+    });
   } catch {
     state.view3d = false;
+    elements.canvas3d.hidden = true;
     updateStamp("この端末では3D地形を表示できません。北向き2Dを表示しています");
     return;
   }
@@ -797,33 +837,31 @@ function enter3D({ restore = false } = {}) {
   elements.threeD.setAttribute("aria-pressed", "true");
   elements.threeDHint.hidden = false;
   set3DOrientation(restore ? state.pitch : 55, restore ? state.bearing : 0);
+  state.renderer3d.resize();
+  state.renderer3d.syncOptions(threeDOptions());
   resizeCanvas();
   invalidateAnalysis("3D地形を準備中", { preserveSelection: true });
 }
 
 function returnToNorth2D() {
+  if (state.renderer3d && state.view3d) {
+    state.renderer3d.map.stop();
+    const camera = state.renderer3d.camera();
+    state.longitude = camera.longitude;
+    state.latitude = camera.latitude;
+    state.zoom = Math.round(camera.zoom);
+  }
   state.view3d = false;
   state.pitch = 0;
   state.bearing = 0;
-  state.renderer3d?.clearGeometry();
   elements.canvas3d.hidden = true;
   elements.canvasWrap.classList.remove("is-3d");
   elements.threeD.setAttribute("aria-pressed", "false");
   elements.threeDHint.hidden = true;
   elements.compassDial.style.setProperty("--bearing-rotation", "0deg");
+  updateZoomControl();
   resizeCanvas();
   invalidateAnalysis("北向き2Dへ戻しました", { preserveSelection: true });
-}
-
-function select3DPoint(x, y) {
-  const hit = state.renderer3d?.pick(x, y);
-  if (!hit || !state.analysis) return;
-  const size = renderCssSize();
-  const center = currentCenterWorld();
-  const position = worldPixelToLonLat(center.x + hit.x - size.width / 2,
-    center.y + hit.y - size.height / 2, state.zoom);
-  state.selectedPoint = position;
-  requestSelectedPoint();
 }
 
 function updateTooltip(event) {
@@ -849,6 +887,12 @@ function pointerMetrics() {
 
 elements.canvas.addEventListener("pointerdown", (event) => {
   if (event.button !== 0 && event.pointerType === "mouse") return;
+  if (event.pointerType === "mouse" && event.ctrlKey) {
+    event.preventDefault();
+    elements.canvas.setPointerCapture(event.pointerId);
+    state.ctrlFrom2D = { id: event.pointerId, x: event.clientX, y: event.clientY };
+    return;
+  }
   event.preventDefault();
   const point = cssPoint(event);
   const startsGesture = state.pointers.size === 0;
@@ -869,6 +913,18 @@ elements.canvas.addEventListener("pointerdown", (event) => {
 });
 
 elements.canvas.addEventListener("pointermove", (event) => {
+  if (state.ctrlFrom2D?.id === event.pointerId) {
+    event.preventDefault();
+    const gesture = state.ctrlFrom2D;
+    const dx = event.clientX - gesture.x, dy = event.clientY - gesture.y;
+    if (!state.view3d && Math.hypot(dx, dy) > 3) {
+      state.pitch = 0;
+      state.bearing = 0;
+      enter3D({ restore: true });
+    }
+    if (state.view3d) set3DOrientation(Math.max(0, -dy * 0.3), dx * 0.35);
+    return;
+  }
   if (!state.pointers.has(event.pointerId)) {
     updateTooltip(event);
     return;
@@ -904,6 +960,11 @@ elements.canvas.addEventListener("pointermove", (event) => {
 });
 
 function finishPointer(event, { cancelled = false, releaseCapture = true } = {}) {
+  if (state.ctrlFrom2D?.id === event.pointerId) {
+    state.ctrlFrom2D = null;
+    if (releaseCapture) try { elements.canvas.releasePointerCapture(event.pointerId); } catch {}
+    return;
+  }
   if (!state.pointers.has(event.pointerId)) return;
   event.preventDefault();
   const point = state.pointers.get(event.pointerId);
@@ -939,6 +1000,7 @@ elements.canvas.addEventListener("lostpointercapture", (event) => finishPointer(
 elements.canvas.addEventListener("pointerleave", (event) => {
   if (!state.pointers.has(event.pointerId)) elements.tooltip.hidden = true;
 });
+elements.canvas.addEventListener("contextmenu", (event) => event.preventDefault());
 
 elements.canvas.addEventListener("wheel", (event) => {
   event.preventDefault();
@@ -947,6 +1009,10 @@ elements.canvas.addEventListener("wheel", (event) => {
 }, { passive: false });
 
 function cancelAllPointers() {
+  if (state.ctrlFrom2D) {
+    try { elements.canvas.releasePointerCapture(state.ctrlFrom2D.id); } catch {}
+    state.ctrlFrom2D = null;
+  }
   if (!state.pointers.size) return;
   const pointerIds = [...state.pointers.keys()];
   state.pointers.clear();
@@ -1099,7 +1165,7 @@ function createExportCanvas() {
   exportContext.font = `700 ${compact ? 9 : 11}px sans-serif`;
   fittedCanvasText(exportContext, `Bousai Wx Lab｜${elements.stampTitle.textContent}`, 14, compact ? 43 : 49, width - 28);
 
-  exportContext.drawImage(state.view3d ? elements.canvas3d : elements.canvas, 0, headerHeight, width, height);
+  exportContext.drawImage(state.view3d ? state.renderer3d.getCanvas() : elements.canvas, 0, headerHeight, width, height);
   const stampWidth = Math.max(130, Math.min(compact ? width - 24 : 540, width - 188));
   exportContext.fillStyle = "rgb(5 43 75 / 92%)";
   exportContext.fillRect(12, headerHeight + 12, stampWidth, compact ? 34 : 40);
@@ -1218,41 +1284,12 @@ function finishCompass(event) {
 elements.compass.addEventListener("pointerup", finishCompass);
 elements.compass.addEventListener("pointercancel", finishCompass);
 
-elements.canvas3d.addEventListener("pointerdown", (event) => {
-  if (event.pointerType === "mouse" && event.button !== 0) return;
-  event.preventDefault();
-  elements.canvas3d.setPointerCapture(event.pointerId);
-  state.orbitGesture = { id: event.pointerId, x: event.clientX, y: event.clientY,
-    bearing: state.bearing, pitch: state.pitch, moved: false };
-  elements.canvasWrap.classList.add("dragging");
-});
-elements.canvas3d.addEventListener("pointermove", (event) => {
-  const gesture = state.orbitGesture;
-  if (!gesture || gesture.id !== event.pointerId) return;
-  event.preventDefault();
-  const deltaX = event.clientX - gesture.x, deltaY = event.clientY - gesture.y;
-  if (Math.hypot(deltaX, deltaY) > 5) gesture.moved = true;
-  if (gesture.moved) set3DOrientation(gesture.pitch - deltaY * 0.28,
-    gesture.bearing + deltaX * 0.35);
-});
-function finishOrbit(event) {
-  const gesture = state.orbitGesture;
-  if (!gesture || gesture.id !== event.pointerId) return;
-  if (!gesture.moved && event.type === "pointerup") {
-    const rect = elements.canvas3d.getBoundingClientRect();
-    select3DPoint(event.clientX - rect.left, event.clientY - rect.top);
-  }
-  state.orbitGesture = null;
-  elements.canvasWrap.classList.remove("dragging");
-}
-elements.canvas3d.addEventListener("pointerup", finishOrbit);
-elements.canvas3d.addEventListener("pointercancel", finishOrbit);
-elements.canvas3d.addEventListener("wheel", (event) => {
-  event.preventDefault();
-  setZoom(state.zoom + (event.deltaY < 0 ? 1 : -1));
-}, { passive: false });
+elements.canvas3d.addEventListener("contextmenu", (event) => event.preventDefault());
 
-elements.radius.addEventListener("change", () => invalidateAnalysis("判定半径を変更しました", { preserveSelection: true }));
+elements.radius.addEventListener("change", () => {
+  state.renderer3d?.syncOptions(threeDOptions());
+  invalidateAnalysis("判定半径を変更しました", { preserveSelection: true });
+});
 elements.threshold.addEventListener("change", () => {
   if (state.analysis) {
     buildOverlay(state.analysis, state.analysis.width, state.analysis.height);
@@ -1260,26 +1297,30 @@ elements.threshold.addEventListener("change", () => {
   } else updateStamp("円内の陸地平均を準備中");
   scheduleDraw();
 });
-elements.baseMap.addEventListener("change", scheduleDraw);
+function refreshMapAppearance() {
+  state.renderer3d?.syncOptions(threeDOptions());
+  scheduleDraw();
+}
+elements.baseMap.addEventListener("change", refreshMapAppearance);
 elements.baseMapOpacity.addEventListener("input", () => {
   elements.baseMapOpacityValue.value = `${elements.baseMapOpacity.value}%`;
-  scheduleDraw();
+  refreshMapAppearance();
 });
 elements.terrainToggle.addEventListener("change", () => {
   syncTerrainControls();
-  scheduleDraw();
+  refreshMapAppearance();
 });
-elements.terrainStyle.addEventListener("change", scheduleDraw);
+elements.terrainStyle.addEventListener("change", refreshMapAppearance);
 elements.terrainOpacity.addEventListener("input", () => {
   elements.terrainOpacityValue.value = `${elements.terrainOpacity.value}%`;
-  scheduleDraw();
+  refreshMapAppearance();
 });
 elements.opacity.addEventListener("input", () => {
   elements.opacityValue.value = `${elements.opacity.value}%`;
-  scheduleDraw();
+  refreshMapAppearance();
 });
-elements.centerMarkToggle.addEventListener("change", scheduleDraw);
-elements.radiusGuideToggle.addEventListener("change", scheduleDraw);
+elements.centerMarkToggle.addEventListener("change", refreshMapAppearance);
+elements.radiusGuideToggle.addEventListener("change", refreshMapAppearance);
 elements.copyLink.addEventListener("click", () => { closeHeaderActions(); void copyShareLink(); });
 elements.download.addEventListener("click", () => { closeHeaderActions(); void downloadCurrentMap(); });
 elements.settingsButton.addEventListener("click", () => openSettings());
@@ -1341,6 +1382,7 @@ window.visualViewport?.addEventListener("scroll", scheduleViewportSync);
 
 const resizeObserver = new ResizeObserver(() => {
   resizeCanvas();
+  if (state.view3d) state.renderer3d?.resize();
   scheduleDraw();
 });
 resizeObserver.observe(elements.canvasWrap);

@@ -113,8 +113,12 @@ def scan_text(
     scan_browser_apis: bool = True,
 ) -> list[str]:
     findings: list[str] = []
+    path_allowances = (allowed_browser_api_fragments or {}).get(path_label, {})
+    local_text = text
+    for approved_fragment in path_allowances.get("local_path", []):
+        local_text = local_text.replace(approved_fragment, "")
     for pattern in LOCAL_PATH_PATTERNS:
-        if pattern.search(text):
+        if pattern.search(local_text):
             findings.append(f"local path pattern: {path_label}")
             break
     for pattern in SECRET_PATTERNS:
@@ -130,14 +134,13 @@ def scan_text(
             break
     for matched_url in URL_PATTERN.findall(text):
         url = matched_url.rstrip(".,;:")
-        if url in SAFE_NON_NETWORK_URLS:
+        if url in SAFE_NON_NETWORK_URLS or url in path_allowances.get("external_url", []):
             continue
         host = (urlparse(url).hostname or "").lower()
         if host and host not in allowed_hosts:
             findings.append(f"unapproved external host: {path_label}")
     suffix = Path(path_label.split("@", 1)[0]).suffix.lower()
     if scan_browser_apis and suffix in {".html", ".js", ".mjs", ".svg"}:
-        path_allowances = (allowed_browser_api_fragments or {}).get(path_label, {})
         for token in DANGEROUS_BROWSER_TOKENS:
             remaining = text
             for approved_fragment in path_allowances.get(token, []):
@@ -509,10 +512,13 @@ def _validate_git(allowlist: dict) -> list[str]:
                         record = binary_records[digest]
                         findings.extend(validate_binary_asset(record["path"], data, record))
                 else:
-                    findings.extend(scan_text(label, text, emails, hosts, scan_browser_apis=kind != "blob"))
                     if kind == "blob":
+                        # Blob paths are resolved below, so path-specific,
+                        # narrow third-party allowances can be applied without
+                        # skipping the full-content scan.
                         texts[object_id] = text
                     else:
+                        findings.extend(scan_text(label, text, emails, hosts))
                         findings.extend(scan_object_identity(label, text, kind, allowed))
                         if kind == "commit":
                             root = text.splitlines()[0].removeprefix("tree ")
@@ -559,13 +565,13 @@ def _validate_git(allowlist: dict) -> list[str]:
             if kind != "blob" or not paths or any(size > large_paths.get(path, 0) for path in paths):
                 findings.append(f"Git object exceeds approved path size: {label}")
         if object_id in texts:
-            # A standalone text blob has no trustworthy extension: apply the
-            # browser checks conservatively until it has a known file path.
             if paths:
                 for path in paths:
-                    if Path(path).suffix.lower() in {".html", ".js", ".mjs", ".svg"}:
-                        findings.extend(scan_text(path, texts[object_id], emails, hosts, browser_allowances))
+                    browser_api = Path(path).suffix.lower() in {".html", ".js", ".mjs", ".svg"}
+                    findings.extend(scan_text(path, texts[object_id], emails, hosts, browser_allowances,
+                        scan_browser_apis=browser_api))
             else:
+                # Unreachable text still receives conservative browser checks.
                 findings.extend(scan_text(f"object.js@{object_id[:12]}", texts[object_id], emails, hosts))
     run_git(["fsck", "--full", "--strict", "--no-reflogs"])
     if run_git(inventory_args).stdout != inventory:
