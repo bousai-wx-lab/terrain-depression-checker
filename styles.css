@@ -1473,6 +1473,12 @@ dd {
     display: inline;
   }
 
+  .analytics-consent {
+    right: auto;
+    left: 8px;
+    width: min(440px, calc(100vw - 92px));
+  }
+
   .page-footer {
     min-height: 0;
   }
@@ -1661,9 +1667,7 @@ dd {
   }
 
   .analytics-consent {
-    right: 8px;
     bottom: max(8px, env(safe-area-inset-bottom));
-    width: calc(100vw - 16px);
     padding: 12px;
   }
 

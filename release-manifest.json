@@ -33628,7 +33628,7 @@
       "bytes": 20941,
       "mime_type": "text/html",
       "path": "index.html",
-      "sha256": "0fffa9419687061e855b70a918d1a22705aa027b3aee1a8d0130cf9029bc8ced"
+      "sha256": "82352b3186fa39b387e86cba10886d0e8e475bbefd2ec504e4ef839714cb7f59"
     },
     {
       "bytes": 2301,
@@ -33697,10 +33697,10 @@
       "sha256": "f288e929f2d608891458858ee665dd5ae11775d19e6277d613cb56cca192aa83"
     },
     {
-      "bytes": 30718,
+      "bytes": 30774,
       "mime_type": "text/css",
       "path": "styles.css",
-      "sha256": "8bf936b4644637cfba97d4931d4703a0b79f223d76fbed6b68bdd2e13f357703"
+      "sha256": "b8fc02dfb5ab4588291d033cb0012f086dab0fa6502819cd954c647e111da3f7"
     },
     {
       "bytes": 9624,
@@ -33736,7 +33736,7 @@
       "bytes": 5454,
       "mime_type": "text/javascript",
       "path": "tests/mobile-interaction.test.mjs",
-      "sha256": "7c9424cf3bd6c3b61070fb794d34ce04dc2f0e26b654b654036fa8328274f15c"
+      "sha256": "9ca9c1d84250c434c8e6e3bc562ab9bee9431dc17f0e0d264774ebeef3d39208"
     },
     {
       "bytes": 8464,
@@ -33775,7 +33775,7 @@
       "sha256": "454e0bbb16c721cfbf952a92ff3e4362130346ed59a5bff56ae5d6fbebb651f7"
     }
   ],
-  "generated_at_utc": "2026-09-23T23:01:48+00:00",
+  "generated_at_utc": "2026-09-23T23:16:51+00:00",
   "schema_version": 1,
   "tool_slug": "terrain-depression-checker"
 }
