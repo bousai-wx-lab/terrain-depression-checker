@@ -3,8 +3,8 @@ import {
   lonLatToWorldPixel, metersPerPixel, parseShareState, scaleBarSpec,
   serializeShareState, tileSourceZoom, worldPixelToLonLat,
 } from "./terrain.js?v=20260923-2";
-import { beginPinchGesture, pinchZoomFromStart, pointerPairMetrics } from "./interaction.js?v=20260905-1";
-import { normalizeBearing, Terrain3DRenderer } from "./terrain-3d.js?v=20260923-4";
+import { angleDelta, beginPinchGesture, classifyTwoFingerGesture, pinchZoomFromStart, pointerPairMetrics } from "./interaction.js?v=20260924-1";
+import { normalizeBearing, Terrain3DRenderer } from "./terrain-3d.js?v=20260924-1";
 const GSI_ORIGIN = "https://cyberjapandata.gsi.go.jp";
 
 const INITIAL_VIEW = Object.freeze({ longitude: 139.767, latitude: 35.681, zoom: 14 });
@@ -358,10 +358,9 @@ function panBy(deltaX, deltaY) {
 }
 
 function resetView() {
+  if (state.view3d) returnToNorth2D();
   state.longitude = INITIAL_VIEW.longitude;
   state.latitude = INITIAL_VIEW.latitude;
-  if (state.view3d) state.renderer3d?.setCenter(state.longitude, state.latitude);
-  else invalidateAnalysis("初期地点へ移動しました");
   state.zoom = INITIAL_VIEW.zoom;
   updateZoomControl();
   invalidateAnalysis("最初の範囲へ戻しました");
@@ -906,7 +905,14 @@ elements.canvas.addEventListener("pointerdown", (event) => {
   } else if (state.pointers.size >= 2) {
     state.moved = true;
     state.hadMultiplePointers = true;
-    state.gesture = beginPinchGesture(pointerMetrics(), state.zoom);
+    const metrics = pointerMetrics();
+    state.gesture = {
+      ...beginPinchGesture(metrics, state.zoom),
+      startX: metrics.x, startY: metrics.y, startAngle: metrics.angle,
+      startPoints: [...state.pointers.values()].map(({ x, y }) => ({ x, y })),
+      startPitch: state.pitch, startBearing: state.bearing,
+      mode: null,
+    };
   }
   elements.canvasWrap.classList.add("dragging");
   elements.tooltip.hidden = true;
@@ -935,15 +941,31 @@ elements.canvas.addEventListener("pointermove", (event) => {
 
   if (state.pointers.size >= 2) {
     const current = pointerMetrics();
-    let gesture = state.gesture;
-    if (current && (!gesture || gesture.kind !== "pinch")) {
-      gesture = beginPinchGesture(current, state.zoom);
-    }
+    const gesture = state.gesture;
     if (current && gesture) {
-      panBy(current.x - gesture.x, current.y - gesture.y);
-      const nextZoom = pinchZoomFromStart(gesture, current, MIN_ZOOM, MAX_ZOOM);
-      if (nextZoom !== null && nextZoom !== state.zoom) setZoom(nextZoom, current.x, current.y);
-      state.gesture = { ...gesture, x: current.x, y: current.y };
+      gesture.mode ??= classifyTwoFingerGesture(gesture, current, [...state.pointers.values()]);
+      if (gesture.mode === "pinch" || gesture.mode === "pan") {
+        panBy(current.x - gesture.x, current.y - gesture.y);
+        if (gesture.mode === "pinch") {
+          const nextZoom = pinchZoomFromStart(gesture, current, MIN_ZOOM, MAX_ZOOM);
+          if (nextZoom !== null && nextZoom !== state.zoom) setZoom(nextZoom, current.x, current.y);
+        }
+      } else if (gesture.mode === "rotate" || gesture.mode === "tilt") {
+        if (!state.view3d) {
+          state.pitch = gesture.startPitch;
+          state.bearing = gesture.startBearing;
+          enter3D({ restore: true });
+        }
+        if (state.view3d) {
+          if (gesture.mode === "rotate") {
+            set3DOrientation(gesture.startPitch, gesture.startBearing - angleDelta(gesture.startAngle, current.angle));
+          } else {
+            set3DOrientation(gesture.startPitch - (current.y - gesture.startY) * 0.5, gesture.startBearing);
+          }
+        }
+      }
+      gesture.x = current.x;
+      gesture.y = current.y;
       state.moved = true;
     }
     return;
@@ -978,7 +1000,14 @@ function finishPointer(event, { cancelled = false, releaseCapture = true } = {})
     }
   }
   if (state.pointers.size >= 2) {
-    state.gesture = beginPinchGesture(pointerMetrics(), state.zoom);
+    const metrics = pointerMetrics();
+    state.gesture = {
+      ...beginPinchGesture(metrics, state.zoom),
+      startX: metrics.x, startY: metrics.y, startAngle: metrics.angle,
+      startPoints: [...state.pointers.values()].map(({ x, y }) => ({ x, y })),
+      startPitch: state.pitch, startBearing: state.bearing,
+      mode: null,
+    };
     state.moved = true;
   } else if (state.pointers.size === 1) {
     state.gesture = [...state.pointers.values()][0];
