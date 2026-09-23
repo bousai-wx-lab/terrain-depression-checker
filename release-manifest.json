@@ -19,10 +19,10 @@
       "sha256": "ca656e33f8e358eed2ba12861f00e15782359055c2d92b10a2bf019edf8af953"
     },
     {
-      "bytes": 14974,
+      "bytes": 15570,
       "mime_type": "text/markdown",
       "path": "README.md",
-      "sha256": "2b8b3f7a0f736ddb5ac01ca57af8804d1b50bdce6c4bf431181197d6305edd70"
+      "sha256": "1554bf3609c7011c733f289e4e10d50fad6b694851f73ca004d4f2c8b582be24"
     },
     {
       "bytes": 2705,
@@ -43,10 +43,10 @@
       "sha256": "6de0c2294a30f3b88e8d72b40ecf0e75890e531286019af2e8f2c3e4531f26f8"
     },
     {
-      "bytes": 56479,
+      "bytes": 57796,
       "mime_type": "text/javascript",
       "path": "app.js",
-      "sha256": "6a770ad209b35b3b4b0d52a443ec8738b01da411011fc887da765f978faad4fa"
+      "sha256": "c37b3d10904b099fa07ac997b13acc56b398afb1a10c798303b4275a8276b709"
     },
     {
       "bytes": 6478,
@@ -33625,10 +33625,10 @@
       "sha256": "9668a7fca9a14ff50d0be3391e0bc3eb4dd004d5b4cdf9ab9412c9152a9df93b"
     },
     {
-      "bytes": 20705,
+      "bytes": 20796,
       "mime_type": "text/html",
       "path": "index.html",
-      "sha256": "81d4a9fe2f8c12664c5edc4da02c82aedd27addd799ec922f3e83e399af3de85"
+      "sha256": "ec64255cfc6aca94ebbb3577045b4834cd84239bdc364a1cb34a66131f0a29c3"
     },
     {
       "bytes": 1033,
@@ -33637,10 +33637,10 @@
       "sha256": "2975400d946fa708cfed9f7a67c7eacc6c2e39e793512db83f06d31f82ee7500"
     },
     {
-      "bytes": 1526156,
+      "bytes": 1527205,
       "mime_type": "application/json",
       "path": "release-allowlist.json",
-      "sha256": "24e2dc0ef9fcbab9746556519e59770308ef43cc64cb93892cd117d7d9909a17"
+      "sha256": "bfd1f01028448b59eb8ef1d5632047d4c48825c9f8ca07c7f87ebab8bc96261c"
     },
     {
       "bytes": 8659,
@@ -33673,10 +33673,10 @@
       "sha256": "5ecd09131c0d89850a3de328d017145a99ece5deca49721a59375d6e67133624"
     },
     {
-      "bytes": 27913,
+      "bytes": 28287,
       "mime_type": "text/x-python",
       "path": "scripts/privacy_gate.py",
-      "sha256": "b3968879abb9505463dc77f3eaa5533b5909f0da2f5e2fe2197d347b2c85e116"
+      "sha256": "6366e939dd5de6fe5739a4bed013a096b56f5ac31c07fc8bedefef4cb022507e"
     },
     {
       "bytes": 1462,
@@ -33697,16 +33697,16 @@
       "sha256": "f288e929f2d608891458858ee665dd5ae11775d19e6277d613cb56cca192aa83"
     },
     {
-      "bytes": 30096,
+      "bytes": 30392,
       "mime_type": "text/css",
       "path": "styles.css",
-      "sha256": "804a5df1b8ffdabafb39a39b4423fa1109ed163b89e51d45bf1d1a145ee31ad3"
+      "sha256": "673dc13bd5a9c417439a8098926747810335cc40533e9d4319f07ec6dbe8bb7b"
     },
     {
-      "bytes": 10825,
+      "bytes": 9583,
       "mime_type": "text/javascript",
       "path": "terrain-3d.js",
-      "sha256": "eee0f26aee0e8e391e481a51bd0a6ff210ec5174ce3a09bae151b7998ab78aea"
+      "sha256": "d6fd31643210c42b516bc8286ac1b9859d94b721c5ac4b138111626106c974ab"
     },
     {
       "bytes": 13215,
@@ -33736,16 +33736,46 @@
       "bytes": 4523,
       "mime_type": "text/javascript",
       "path": "tests/mobile-interaction.test.mjs",
-      "sha256": "f74ab55a7cec7f409a965602ce5043babde80ef1bb686bfdfd48199259eb7dc6"
+      "sha256": "330c4f0af054933c39dad47e90075f762cc49b64fd38513d669ea2e7ebbcb598"
     },
     {
       "bytes": 8464,
       "mime_type": "text/javascript",
       "path": "tests/terrain.test.mjs",
       "sha256": "58861b7ea4ff80def518cabf0903c796d42848d4dfcb7d4bc86b555abf6db5b6"
+    },
+    {
+      "bytes": 5984,
+      "mime_type": "text/plain",
+      "path": "vendor/maplibre/LICENSE.txt",
+      "sha256": "ee5fc05a0677eaf69601d2c7db0d9ecd6cc27c3abc1d0733bc9ed34707cf8ef2"
+    },
+    {
+      "bytes": 513898,
+      "mime_type": "text/javascript",
+      "path": "vendor/maplibre/maplibre-gl-shared.mjs",
+      "sha256": "0996a0ff2ecb2807afc3f053992539ff7fe45c1678a02304b2b33120136f81f3"
+    },
+    {
+      "bytes": 19007,
+      "mime_type": "text/javascript",
+      "path": "vendor/maplibre/maplibre-gl-worker.mjs",
+      "sha256": "7d5ebf88ec25a72cc48cc320d374f41d921e5105d2f1fc774d463a4b68164227"
+    },
+    {
+      "bytes": 83195,
+      "mime_type": "text/css",
+      "path": "vendor/maplibre/maplibre-gl.css",
+      "sha256": "8e2dbbab312dc57656fbb76e9fa5308c75c9d7c7ba5808a7d55bcdb64cc813fa"
+    },
+    {
+      "bytes": 584394,
+      "mime_type": "text/javascript",
+      "path": "vendor/maplibre/maplibre-gl.mjs",
+      "sha256": "454e0bbb16c721cfbf952a92ff3e4362130346ed59a5bff56ae5d6fbebb651f7"
     }
   ],
-  "generated_at_utc": "2026-09-23T10:55:31+00:00",
+  "generated_at_utc": "2026-09-23T14:13:00+00:00",
   "schema_version": 1,
   "tool_slug": "terrain-depression-checker"
 }

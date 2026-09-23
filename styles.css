@@ -721,6 +721,18 @@ dd {
   display: none;
 }
 
+.terrain-3d-canvas.show-center-cross::after {
+  content: "+";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: #07507e;
+  font: 800 29px/1 sans-serif;
+  text-shadow: -2px -2px #fff, 2px -2px #fff, -2px 2px #fff, 2px 2px #fff;
+  pointer-events: none;
+}
+
 .map-view-controls {
   position: absolute;
   right: 9px;

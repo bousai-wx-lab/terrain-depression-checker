@@ -11,7 +11,6 @@
     "analytics-consent.js",
     "app.js",
     "area.js",
-    "interaction.js",
     "assets/bousaiwxlab-site-icon.png",
     "assets/terrain-depression-share-card.png",
     "data/area-index.json",
@@ -5608,6 +5607,7 @@
     "data/global-v1/8/479/171.json.gz",
     "data/global-v1/8/480/170.json.gz",
     "index.html",
+    "interaction.js",
     "release-allowlist.json",
     "release-manifest.json",
     "scripts/build_area_data.py",
@@ -5617,16 +5617,21 @@
     "scripts/check_area_accuracy.py",
     "scripts/privacy_gate.py",
     "scripts/register_area_release.py",
-    "scripts/test_privacy_gate.py",
     "scripts/test_pages_release.py",
+    "scripts/test_privacy_gate.py",
     "styles.css",
     "terrain-3d.js",
     "terrain.js",
-    "tests/area.test.mjs",
     "tests/analytics.test.mjs",
+    "tests/area.test.mjs",
     "tests/display-contract.test.mjs",
     "tests/mobile-interaction.test.mjs",
-    "tests/terrain.test.mjs"
+    "tests/terrain.test.mjs",
+    "vendor/maplibre/LICENSE.txt",
+    "vendor/maplibre/maplibre-gl-shared.mjs",
+    "vendor/maplibre/maplibre-gl-worker.mjs",
+    "vendor/maplibre/maplibre-gl.css",
+    "vendor/maplibre/maplibre-gl.mjs"
   ],
   "allowed_external_hosts": [
     "*.analytics.google.com",
@@ -5648,6 +5653,31 @@
       "localStorage": [
         "window.localStorage.getItem(CONSENT_STORAGE_KEY)",
         "window.localStorage.setItem(CONSENT_STORAGE_KEY, value)"
+      ]
+    },
+    "vendor/maplibre/maplibre-gl-worker.mjs": {
+      "eval(": [
+        "globalThis.eval(n)"
+      ]
+    },
+    "vendor/maplibre/maplibre-gl.mjs": {
+      "innerHTML": [
+        "return e.clean(n),n.innerHTML",
+        "this._innerContainer.innerHTML=G.sanitize(n)",
+        "for(n.innerHTML=e;r=n.firstChild",
+        "this._closeButton.innerHTML=`&#215;`"
+      ],
+      "navigator.geolocation": [
+        "window.navigator.geolocation"
+      ],
+      "external_url": [
+        "https:\u002f/maplibre.org/",
+        "https:\u002f/wiki.openstreetmap.org/wiki/This_map_requires_WebGL"
+      ]
+    },
+    "vendor/maplibre/maplibre-gl-shared.mjs": {
+      "local_path": [
+        "r=[`file:\u002f/`,`resource://android`,`null`]"
       ]
     }
   },
@@ -44862,6 +44892,8 @@
   "large_text_files": {
     "release-allowlist.json": 2500000,
     "release-manifest.json": 2000000,
-    "data/area-index.json": 1500000
+    "data/area-index.json": 1500000,
+    "vendor/maplibre/maplibre-gl.mjs": 700000,
+    "vendor/maplibre/maplibre-gl-shared.mjs": 700000
   }
 }
