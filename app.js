@@ -2,7 +2,7 @@ import {
   MAX_MAP_ZOOM, TILE_SIZE, depthColor, destinationPoint, elevationDifference,
   lonLatToWorldPixel, metersPerPixel, parseShareState, scaleBarSpec,
   serializeShareState, tileSourceZoom, worldPixelToLonLat,
-} from "./terrain.js?v=20260905-6";
+} from "./terrain.js?v=20260923-1";
 import { beginPinchGesture, pinchZoomFromStart, pointerPairMetrics } from "./interaction.js?v=20260905-1";
 const GSI_ORIGIN = "https://cyberjapandata.gsi.go.jp";
 
