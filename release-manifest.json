@@ -19,10 +19,10 @@
       "sha256": "ca656e33f8e358eed2ba12861f00e15782359055c2d92b10a2bf019edf8af953"
     },
     {
-      "bytes": 13771,
+      "bytes": 14974,
       "mime_type": "text/markdown",
       "path": "README.md",
-      "sha256": "426a330a09dc7bca86a63aa9f1873e2d1c7f00cc52b834c8620bbcf9cf77a458"
+      "sha256": "2b8b3f7a0f736ddb5ac01ca57af8804d1b50bdce6c4bf431181197d6305edd70"
     },
     {
       "bytes": 2705,
@@ -31,10 +31,10 @@
       "sha256": "7d26d802f69db86d14253896c32dbcf0f39a1a1e09fef4bd3ec741854ce17b09"
     },
     {
-      "bytes": 14924,
+      "bytes": 15955,
       "mime_type": "text/javascript",
       "path": "analysis-worker.js",
-      "sha256": "4d964c39d3bd708ae9b317baee4c2b8b3caa12462769b20bb0443568bc0d0a7c"
+      "sha256": "56fee0050a0b229a1ab7d6fc6a5684d3a2393156e6d72204b173a80d3ed74c13"
     },
     {
       "bytes": 3107,
@@ -43,10 +43,10 @@
       "sha256": "6de0c2294a30f3b88e8d72b40ecf0e75890e531286019af2e8f2c3e4531f26f8"
     },
     {
-      "bytes": 48846,
+      "bytes": 56479,
       "mime_type": "text/javascript",
       "path": "app.js",
-      "sha256": "001125e4b9a26e12763745b88357dda8687c34e1567a58cd068bbce85e4e7dcf"
+      "sha256": "6a770ad209b35b3b4b0d52a443ec8738b01da411011fc887da765f978faad4fa"
     },
     {
       "bytes": 6478,
@@ -33625,10 +33625,10 @@
       "sha256": "9668a7fca9a14ff50d0be3391e0bc3eb4dd004d5b4cdf9ab9412c9152a9df93b"
     },
     {
-      "bytes": 19587,
+      "bytes": 20705,
       "mime_type": "text/html",
       "path": "index.html",
-      "sha256": "486f834b77362cc064244d24e8499e210804d506706e88ea4952e7c11918b20a"
+      "sha256": "81d4a9fe2f8c12664c5edc4da02c82aedd27addd799ec922f3e83e399af3de85"
     },
     {
       "bytes": 1033,
@@ -33637,10 +33637,10 @@
       "sha256": "2975400d946fa708cfed9f7a67c7eacc6c2e39e793512db83f06d31f82ee7500"
     },
     {
-      "bytes": 1526135,
+      "bytes": 1526156,
       "mime_type": "application/json",
       "path": "release-allowlist.json",
-      "sha256": "11323069b99fa3c231d2862b355ace2c9a150c9f7e1dce553d7e3d4aeaf9a248"
+      "sha256": "24e2dc0ef9fcbab9746556519e59770308ef43cc64cb93892cd117d7d9909a17"
     },
     {
       "bytes": 8659,
@@ -33697,16 +33697,22 @@
       "sha256": "f288e929f2d608891458858ee665dd5ae11775d19e6277d613cb56cca192aa83"
     },
     {
-      "bytes": 28108,
+      "bytes": 30096,
       "mime_type": "text/css",
       "path": "styles.css",
-      "sha256": "82b6cbad702dcf80e927eb33536e1115c3e5b18a040f8ad023f124d8786d4e1e"
+      "sha256": "804a5df1b8ffdabafb39a39b4423fa1109ed163b89e51d45bf1d1a145ee31ad3"
     },
     {
-      "bytes": 12780,
+      "bytes": 10825,
+      "mime_type": "text/javascript",
+      "path": "terrain-3d.js",
+      "sha256": "eee0f26aee0e8e391e481a51bd0a6ff210ec5174ce3a09bae151b7998ab78aea"
+    },
+    {
+      "bytes": 13215,
       "mime_type": "text/javascript",
       "path": "terrain.js",
-      "sha256": "eddb3b131ed0378512668d74480894eb1f81cdd35d16423e7b38a3a322b106bd"
+      "sha256": "33ba61bf3cece07ba4602f68658da7862064e4319d35147d05797eb83581a1dd"
     },
     {
       "bytes": 1722,
@@ -33727,19 +33733,19 @@
       "sha256": "b4ff7f1ce7a88e10a75fbb98ca8d2abb7bdc34e2c3dc15c390b59635b8abdd78"
     },
     {
-      "bytes": 4375,
+      "bytes": 4523,
       "mime_type": "text/javascript",
       "path": "tests/mobile-interaction.test.mjs",
-      "sha256": "f9ac9e0ccdd7427014111a79d0a9f128a2d806271179ce9ee5810a65a8d3708f"
+      "sha256": "f74ab55a7cec7f409a965602ce5043babde80ef1bb686bfdfd48199259eb7dc6"
     },
     {
-      "bytes": 8097,
+      "bytes": 8464,
       "mime_type": "text/javascript",
       "path": "tests/terrain.test.mjs",
-      "sha256": "8ea88a4de688274011c65e4ce4887a2eb24e371abf2dfc7fb64807882f8e742c"
+      "sha256": "58861b7ea4ff80def518cabf0903c796d42848d4dfcb7d4bc86b555abf6db5b6"
     }
   ],
-  "generated_at_utc": "2026-09-23T09:06:47+00:00",
+  "generated_at_utc": "2026-09-23T10:55:31+00:00",
   "schema_version": 1,
   "tool_slug": "terrain-depression-checker"
 }

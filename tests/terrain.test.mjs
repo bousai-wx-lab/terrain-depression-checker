@@ -184,6 +184,18 @@ assert.deepEqual(invalidShare, {});
 assert.deepEqual(parseShareState("?v=1&centerMark=0&radiusGuide=0"), { centerMark: false, radiusGuide: false });
 assert.deepEqual(parseShareState("?v=1"), {});
 assert.deepEqual(parseShareState("?lat=35&lon=139&z=14"), {});
+const threeDShare = parseShareState(serializeShareState({
+  ...parsedShare,
+  view3d: true,
+  bearing: -72.4,
+  pitch: 62.5,
+}));
+assert.equal(threeDShare.view3d, true);
+assert.equal(threeDShare.bearing, -72.4);
+assert.equal(threeDShare.pitch, 62.5);
+assert.deepEqual(parseShareState("?v=1&view=3d&bearing=999&pitch=-5"), {
+  view3d: true, bearing: 0, pitch: 55,
+});
 
 process.stdout.write("TERRAIN_ALGORITHM_TESTS_OK cases=69\nSHARE_STATE_TESTS_OK cases=18\n");
 process.stdout.write(`GEODESIC_RADIUS_TESTS_OK cases=${geodesicCases}\nDIRECTIONAL_COVERAGE_TESTS_OK masks=${2 ** largeRing.sectorCount}\n`);

@@ -703,6 +703,115 @@ dd {
   height: 100%;
 }
 
+.canvas-wrap.is-3d #mapCanvas {
+  visibility: hidden;
+}
+
+.terrain-3d-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+.terrain-3d-canvas[hidden] {
+  display: none;
+}
+
+.map-view-controls {
+  position: absolute;
+  right: 9px;
+  bottom: 27px;
+  z-index: 7;
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+}
+
+.map-view-controls button {
+  min-width: 58px;
+  min-height: 37px;
+  padding: 3px 5px;
+  border: 1px solid #7896aa;
+  border-radius: 7px;
+  background: rgb(255 255 255 / 96%);
+  color: #123951;
+  box-shadow: 0 3px 9px rgb(13 45 69 / 20%);
+  font-size: 11px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.map-view-controls button:hover,
+.map-view-controls button[aria-pressed="true"] {
+  border-color: #156f9e;
+  background: #d8f1fb;
+}
+
+.map-view-controls .compass-button {
+  width: 58px;
+  height: 58px;
+  padding: 3px;
+  border-radius: 50%;
+  touch-action: none;
+}
+
+.compass-dial {
+  position: relative;
+  display: block;
+  width: 50px;
+  height: 50px;
+  transform: rotate(var(--bearing-rotation, 0deg));
+  border: 1px solid #9ab2c2;
+  border-radius: 50%;
+  background: #f5fbfd;
+}
+
+.compass-dial b {
+  position: absolute;
+  font-size: 9px;
+  line-height: 1;
+}
+
+.compass-n { top: 2px; left: 21px; color: #bd2b3a; }
+.compass-e { top: 21px; right: 2px; }
+.compass-s { bottom: 2px; left: 21px; }
+.compass-w { top: 21px; left: 2px; }
+
+.compass-dial i {
+  position: absolute;
+  top: 12px;
+  left: 21px;
+  width: 7px;
+  height: 13px;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  background: #bd2b3a;
+}
+
+.terrain-3d-hint {
+  position: absolute;
+  right: 76px;
+  bottom: 31px;
+  z-index: 5;
+  max-width: min(300px, calc(100% - 110px));
+  margin: 0;
+  padding: 5px 8px;
+  border-radius: 5px;
+  background: rgb(5 43 75 / 87%);
+  color: #fff;
+  font-size: 11px;
+  pointer-events: none;
+}
+
+.terrain-3d-hint[hidden],
+.canvas-wrap.is-3d .map-scale,
+.canvas-wrap.is-3d .mobile-map-hint {
+  display: none;
+}
+
 .map-stamp {
   position: absolute;
   top: 12px;

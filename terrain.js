@@ -75,6 +75,13 @@ export function parseShareState(search) {
   if (depressionOpacity !== null) parsed.depressionOpacity = depressionOpacity;
   if (["0", "1"].includes(params.get("centerMark"))) parsed.centerMark = params.get("centerMark") === "1";
   if (["0", "1"].includes(params.get("radiusGuide"))) parsed.radiusGuide = params.get("radiusGuide") === "1";
+  if (params.get("view") === "3d") {
+    parsed.view3d = true;
+    const bearing = finiteInRange(params.get("bearing"), -180, 180);
+    const pitch = finiteInRange(params.get("pitch"), 0, 70);
+    parsed.bearing = bearing ?? 0;
+    parsed.pitch = pitch ?? 55;
+  }
 
   const pointLatitude = finiteInRange(params.get("pointLat"), 20, 48);
   const pointLongitude = finiteInRange(params.get("pointLon"), 118, 154);
@@ -100,6 +107,11 @@ export function serializeShareState(view) {
   params.set("depressionOpacity", String(Math.round(Number(view.depressionOpacity))));
   params.set("centerMark", view.centerMark ? "1" : "0");
   params.set("radiusGuide", view.radiusGuide ? "1" : "0");
+  if (view.view3d) {
+    params.set("view", "3d");
+    params.set("bearing", Number(view.bearing).toFixed(1));
+    params.set("pitch", Number(view.pitch).toFixed(1));
+  }
   if (view.selectedPoint) {
     params.set("pointLat", Number(view.selectedPoint.latitude).toFixed(6));
     params.set("pointLon", Number(view.selectedPoint.longitude).toFixed(6));

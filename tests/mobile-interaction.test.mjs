@@ -37,11 +37,12 @@ const css = readFileSync(new URL("../styles.css", import.meta.url), "utf8");
 const app = readFileSync(new URL("../app.js", import.meta.url), "utf8");
 const ids = [...html.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]);
 assert.equal(new Set(ids).size, ids.length);
-for (const id of ["usageGuideLink", "settingsButton", "settingsPanel", "settingsCloseButton", "moreButton", "legendButton", "mobilePointSummary"]) {
+for (const id of ["usageGuideLink", "settingsButton", "settingsPanel", "settingsCloseButton", "moreButton", "legendButton", "mobilePointSummary", "terrain3dCanvas", "compassButton", "threeDButton", "twoDButton"]) {
   assert.ok(ids.includes(id));
 }
 assert.ok(html.includes('content="width=device-width, initial-scale=1"'));
-assert.ok(html.includes('href="./styles.css?v=20260920-2"'));
+assert.ok(html.includes('href="./styles.css?v=20260923-3"'));
+assert.ok(html.includes('id="threeDButton" type="button" aria-pressed="false"'));
 const usageGuideLink = html.match(/<a\s+id="usageGuideLink"[\s\S]*?>使い方<\/a>/)?.[0] || "";
 assert.ok(usageGuideLink.includes('href="https://bousai-wx-lab.com/terrain-depression-checker/"'));
 assert.ok(usageGuideLink.includes('target="_blank"'));
