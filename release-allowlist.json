@@ -5620,6 +5620,7 @@
     "scripts/test_privacy_gate.py",
     "scripts/test_pages_release.py",
     "styles.css",
+    "terrain-3d.js",
     "terrain.js",
     "tests/area.test.mjs",
     "tests/analytics.test.mjs",

@@ -230,6 +230,28 @@ async function point(message) {
     elevationDifference:elevation-average.mean,landFraction:average.landFraction,sourceResolution:metersPerPixel(position.latitude,sourceZoom)}:null});
 }
 
+async function surface(message) {
+  const { id, view } = message;
+  const detail = await details(view, id);
+  if (id !== active) return;
+  const step = 18;
+  const columns = Math.ceil(view.width / step) + 1;
+  const rows = Math.ceil(view.height / step) + 1;
+  const elevations = new Float32Array(columns * rows);
+  elevations.fill(NaN);
+  const center = lonLatToWorldPixel(view.longitude, view.latitude, view.zoom);
+  for (let row = 0; row < rows; row++) {
+    const y = Math.min(view.height, row * step);
+    for (let col = 0; col < columns; col++) {
+      const x = Math.min(view.width, col * step);
+      const value = detailValue(detail, center.x + x - view.width / 2,
+        center.y + y - view.height / 2, view.zoom).value;
+      elevations[row * columns + col] = value;
+    }
+  }
+  postMessage({ type: 'surface', id, step, columns, rows, elevations }, [elevations.buffer]);
+}
+
 async function drain() {
   if(running)return;
   running=true;
@@ -248,8 +270,9 @@ self.onmessage=event=>{
   const message=event.data;
   if(message.type==='cancel'){active=message.id;last=null;pending=null;return;}
   if(message.type==='analyze'){active=message.id;last=null;pending=message;void drain();return;}
-  const job=message.type==='point'?point(message):Promise.resolve();
+  const job=message.type==='point'?point(message):message.type==='surface'?surface(message):Promise.resolve();
   job.catch(()=>{
     if(message.type==='point')postMessage({type:'point',pointId:message.pointId,analysisId:message.analysisId,value:null,error:true});
+    if(message.type==='surface'&&message.id===active)postMessage({type:'surface-error',id:message.id});
   });
 };
